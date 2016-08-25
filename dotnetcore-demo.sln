@@ -20,6 +20,8 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "ef-demo.tests", "test\ef-de
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "webapi-demo", "src\webapi-demo\webapi-demo.xproj", "{62212806-3E2B-4B53-8505-F09422C2FF18}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "webapi-demo.tests", "test\webapi-demo.tests\webapi-demo.tests.xproj", "{06CE5202-7878-4CE7-AE55-3D06EE7B6D2D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,6 +44,10 @@ Global
 		{62212806-3E2B-4B53-8505-F09422C2FF18}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{62212806-3E2B-4B53-8505-F09422C2FF18}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{62212806-3E2B-4B53-8505-F09422C2FF18}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06CE5202-7878-4CE7-AE55-3D06EE7B6D2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06CE5202-7878-4CE7-AE55-3D06EE7B6D2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06CE5202-7878-4CE7-AE55-3D06EE7B6D2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06CE5202-7878-4CE7-AE55-3D06EE7B6D2D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -51,5 +57,6 @@ Global
 		{1AC99768-1FE2-4D11-9D47-ED8CBEED6086} = {0D0E8683-8A9A-4C40-84A3-E7225B4994D1}
 		{D534A3BB-39BD-4CD5-A7A9-4337D5167CE3} = {70F82131-0C7C-4878-842A-F8441DA2C14F}
 		{62212806-3E2B-4B53-8505-F09422C2FF18} = {0D0E8683-8A9A-4C40-84A3-E7225B4994D1}
+		{06CE5202-7878-4CE7-AE55-3D06EE7B6D2D} = {70F82131-0C7C-4878-842A-F8441DA2C14F}
 	EndGlobalSection
 EndGlobal
