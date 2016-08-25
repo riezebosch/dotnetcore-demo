@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.EntityFrameworkCore;
 
 namespace webapi_demo
 {
@@ -30,6 +31,8 @@ namespace webapi_demo
             // Add framework services.
             services.AddMvc();
             services.AddSwaggerGen();
+
+            services.AddDbContext<DemoContext>(options => options.UseSqlite("FileName=./data.db"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

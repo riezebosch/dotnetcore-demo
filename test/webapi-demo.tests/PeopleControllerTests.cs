@@ -1,7 +1,10 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -34,6 +37,21 @@ namespace webapi_demo.tests
             await context.SaveChangesAsync();
 
             return context;
+        }
+
+        [Fact]
+        public async Task IntegrationTestForPeople()
+        {
+            var server = new TestServer(new WebHostBuilder().UseStartup<Startup>());
+            var client = server.CreateClient();
+
+            var response = await client.GetAsync("/api/people");
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
+            var result = await response.Content.ReadAsStringAsync();
+
+            Assert.Contains("Manuel", result);
+
         }
     }
 }
