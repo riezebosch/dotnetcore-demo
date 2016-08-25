@@ -10,7 +10,7 @@ namespace ef_demo.tests
     /// <summary>
     /// With the help of: https://xunit.github.io/docs/getting-started-dotnet-core.html
     /// </summary>
-    public class Class1
+    public class DemoContextTests
     {
         [Fact]
         public async Task TestEFCoreCreatesSqliteDatabase()
