@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,10 +25,10 @@ namespace webapi_demo.tests
             }
         }
 
-        private static async Task<DemoContext> InitializeDatabase()
+        private static async Task<DemoContext> InitializeDatabase(string file = "./test.db")
         {
             var builder = new DbContextOptionsBuilder<DemoContext>();
-            builder.UseSqlite("FileName=./test.db");
+            builder.UseSqlite($"FileName={file}");
 
             var context = new DemoContext(builder.Options);
             await context.Database.EnsureDeletedAsync();
@@ -42,7 +43,11 @@ namespace webapi_demo.tests
         [Fact]
         public async Task IntegrationTestForPeople()
         {
-            var server = new TestServer(new WebHostBuilder().UseStartup<Startup>());
+            using (var context = await InitializeDatabase(file: "./temp.db"))
+            {
+            }
+
+            var server = new TestServer(new WebHostBuilder().UseStartup<Startup>().ConfigureServices(services => services.AddDbContext<DemoContext>(options => options.UseSqlite("FileName='./temp.db'"))));
             var client = server.CreateClient();
 
             var response = await client.GetAsync("/api/people");
