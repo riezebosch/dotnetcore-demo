@@ -11,7 +11,12 @@ public class PeopleController : Controller
     public PeopleController(DemoContext context)
     {
         this.context = context;
-        this.context.Database.EnsureCreated();
+        
+        if (this.context.Database.EnsureCreated())
+        {
+            context.People.Add(new Person { FirstName = "Test", LastName = "Man" });
+            context.SaveChanges();
+        }
     }
 
     [HttpGet]

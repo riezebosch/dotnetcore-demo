@@ -12,9 +12,13 @@ namespace mvc_demo.Controllers
         public async Task<IActionResult> Index()
         {
             var client = new Services.Client("http://localhost:1889/");
-            var result = await client.ApiValuesGetAsync();
+            var model = new IndexViewModel();
 
-            return View(new IndexViewModel { Values = result });
+            // kick off in parallel!
+            var values = client.ApiValuesGetAsync();
+            var people = client.ApiPeopleGetAsync();
+
+            return View(new IndexViewModel { Values = await values, People = await people });
         }
 
         public IActionResult About()
