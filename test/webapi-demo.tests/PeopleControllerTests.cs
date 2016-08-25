@@ -41,22 +41,32 @@ namespace webapi_demo.tests
         }
 
         [Fact]
-        public async Task IntegrationTestForPeople()
+        public async Task IntegrationTestForPeopleUsingInMemoryDatabase()
         {
-            using (var context = await InitializeDatabase(file: "./temp.db"))
-            {
-            }
+            await ConfigurInMemoryDatabase();
+            var server = new TestServer(new WebHostBuilder()
+                .UseStartup<Startup>()
+                .ConfigureServices(
+                    services => services.AddDbContext<DemoContext>(
+                        options => options.UseInMemoryDatabase())));
 
-            var server = new TestServer(new WebHostBuilder().UseStartup<Startup>().ConfigureServices(services => services.AddDbContext<DemoContext>(options => options.UseSqlite("FileName='./temp.db'"))));
             var client = server.CreateClient();
 
             var response = await client.GetAsync("/api/people");
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
             var result = await response.Content.ReadAsStringAsync();
+            Assert.Contains("Pietje", result);
+        }
 
-            Assert.Contains("Manuel", result);
-
+        private static async Task ConfigurInMemoryDatabase()
+        {
+            var builder = new DbContextOptionsBuilder<DemoContext>().UseInMemoryDatabase();
+            using (var context = new DemoContext(builder.Options))
+            {
+                context.People.Add(new Person { Id = 0, FirstName = "Pietje", LastName = "Puk" });
+                await context.SaveChangesAsync();
+            }
         }
     }
 }
