@@ -1,0 +1,12 @@
+version: '2'
+
+services:
+  webapi-demo:
+    image: webapi-demo:debug
+    build:
+      context: .
+      dockerfile: Dockerfile.debug
+    ports:
+      - "1889:1889"
+    environment:
+      - REMOTE_DEBUGGING

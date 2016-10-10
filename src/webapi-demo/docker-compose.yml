@@ -1,0 +1,10 @@
+version: '2'
+
+services:
+  webapi-demo:
+    image: webapi-demo
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "1889:1889"
