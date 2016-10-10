@@ -1,0 +1,10 @@
+version: '2'
+
+services:
+  mvc-demo:
+    image: mvc-demo
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"

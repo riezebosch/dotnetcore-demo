@@ -1,5 +1,6 @@
-{
+﻿{
   "userSecretsId": "aspnet-mvc_demo-99e7e8ad-16c0-4dfa-a44e-382f5f59b86f",
+
   "dependencies": {
     "Microsoft.NETCore.App": {
       "version": "1.0.0",
@@ -43,6 +44,7 @@
       "type": "build"
     }
   },
+
   "tools": {
     "BundlerMinifier.Core": "2.0.238",
     "Microsoft.AspNetCore.Razor.Tools": "1.0.0-preview2-final",
@@ -56,6 +58,7 @@
       ]
     }
   },
+
   "frameworks": {
     "netcoreapp1.0": {
       "imports": [
@@ -64,36 +67,30 @@
       ]
     }
   },
+
   "buildOptions": {
     "emitEntryPoint": true,
-    "preserveCompilationContext": true,
-    "debugType": "portable"
+    "preserveCompilationContext": true
   },
+
   "runtimeOptions": {
     "configProperties": {
       "System.GC.Server": true
     }
   },
+
   "publishOptions": {
     "include": [
       "wwwroot",
       "Views",
       "Areas/**/Views",
       "appsettings.json",
-      "web.config",
-      "Dockerfile.debug",
-      "Dockerfile",
-      "docker-compose.debug.yml",
-      "docker-compose.yml"
+      "web.config"
     ]
   },
+
   "scripts": {
-    "prepublish": [
-      "bower install",
-      "dotnet bundle"
-    ],
-    "postpublish": [
-      "dotnet publish-iis --publish-folder %publish:OutputPath% --framework %publish:FullTargetFramework%"
-    ]
+    "prepublish": [ "bower install", "dotnet bundle" ],
+    "postpublish": [ "dotnet publish-iis --publish-folder %publish:OutputPath% --framework %publish:FullTargetFramework%" ]
   }
 }
