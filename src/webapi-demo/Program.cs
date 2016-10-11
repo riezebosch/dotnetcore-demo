@@ -17,7 +17,6 @@ namespace webapi_demo
                 .UseContentRoot(Directory.GetCurrentDirectory())
                 .UseIISIntegration()
                 .UseStartup<Startup>()
-                .UseUrls("http://*:1889")
                 .Build();
 
             host.Run();

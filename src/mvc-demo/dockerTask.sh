@@ -1,5 +1,5 @@
 imageName="mvc-demo"
-projectName="mvcdemo"
+projectName="dotnetcoredemo"
 serviceName="mvc-demo"
 containerName="${projectName}_${serviceName}_1"
 publicPort=80

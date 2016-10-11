@@ -38,10 +38,10 @@ Param(
 )
 
 $imageName="webapi-demo"
-$projectName="webapidemo"
+$projectName="dotnetcoredemo"
 $serviceName="webapi-demo"
 $containerName="${projectName}_${serviceName}_1"
-$publicPort=1889
+$publicPort=80
 $url="http://localhost:$publicPort"
 $runtimeID = "debian.8-x64"
 $framework = "netcoreapp1.0"

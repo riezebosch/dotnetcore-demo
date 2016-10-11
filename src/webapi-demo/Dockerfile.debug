@@ -7,7 +7,7 @@ RUN curl -SL https://raw.githubusercontent.com/Microsoft/MIEngine/getclrdbg-rele
     && ./GetClrDbg.sh $CLRDBG_VERSION \
     && rm GetClrDbg.sh
 WORKDIR /app
-ENV ASPNETCORE_URLS http://*:1889
-EXPOSE 1889
+ENV ASPNETCORE_URLS http://*:80
+EXPOSE 80
 ENTRYPOINT ["/bin/bash", "-c", "if [ -z \"$REMOTE_DEBUGGING\" ]; then dotnet webapi-demo.dll; else sleep infinity; fi"]
 COPY . /app

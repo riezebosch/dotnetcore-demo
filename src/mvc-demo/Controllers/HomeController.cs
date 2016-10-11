@@ -11,7 +11,7 @@ namespace mvc_demo.Controllers
     {
         public async Task<IActionResult> Index()
         {
-            var client = new Services.Client("http://localhost:1889");
+            var client = new Services.Client("http://webapi-demo");
             var model = new IndexViewModel();
 
             // kick off in parallel!

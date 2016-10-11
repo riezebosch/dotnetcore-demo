@@ -6,5 +6,5 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    ports:
-      - "1889:1889"
+    expose:
+      - "80"

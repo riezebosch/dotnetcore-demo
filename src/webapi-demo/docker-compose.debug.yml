@@ -7,6 +7,6 @@ services:
       context: .
       dockerfile: Dockerfile.debug
     ports:
-      - "1889:1889"
+      - "80:80"
     environment:
       - REMOTE_DEBUGGING
