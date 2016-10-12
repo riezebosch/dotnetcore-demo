@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using MySQL.Data.EntityFrameworkCore.Extensions;
 
 namespace webapi_demo
 {
@@ -32,7 +33,7 @@ namespace webapi_demo
             services.AddMvc();
             services.AddSwaggerGen();
 
-            services.AddDbContext<DemoContext>(options => options.UseSqlite("FileName=./data.db"));
+            services.AddDbContext<DemoContext>(options => options.UseMySQL("server=efcoredemo-mysql;userid=root;pwd=Pa$$w0rd;port=3306;database=demo;sslmode=none;"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
