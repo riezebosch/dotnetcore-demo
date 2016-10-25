@@ -1,4 +1,5 @@
-﻿using RabbitMQ.Client;
+﻿using Newtonsoft.Json;
+using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
@@ -26,7 +27,8 @@ namespace rabbitmq_demo.tests
                                  autoDelete: false,
                                  arguments: null);
 
-                string message = "Hello World!";
+                var person = new Person { FirstName = "Test", LastName = "Man" };
+                var message = JsonConvert.SerializeObject(person);
                 var body = Encoding.UTF8.GetBytes(message);
 
                 channel.BasicPublish(exchange: "",
@@ -46,13 +48,14 @@ namespace rabbitmq_demo.tests
 
                 using (var wait = new AutoResetEvent(false))
                 {
-                    string message = null;
+                    Person person = null;
+
                     var consumer = new EventingBasicConsumer(channel);
                     consumer.Received += (model, ea) =>
                     {
                         var body = ea.Body;
-                        message = Encoding.UTF8.GetString(body);
-
+                        var message = Encoding.UTF8.GetString(body);
+                        person = JsonConvert.DeserializeObject<Person>(message);
                         wait.Set();
                     };
 
@@ -61,7 +64,7 @@ namespace rabbitmq_demo.tests
                                          consumer: consumer);
 
                     Assert.True(wait.WaitOne(TimeSpan.FromSeconds(30)));
-                    Assert.Equal("Hello World!", message);
+                    Assert.Equal(new Person { FirstName = "Test", LastName = "Man" }, person, new PersonComparer());
                 }
             }
         }
