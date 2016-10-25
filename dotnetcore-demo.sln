@@ -22,6 +22,10 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "webapi-demo", "src\webapi-d
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "webapi-demo.tests", "test\webapi-demo.tests\webapi-demo.tests.xproj", "{06CE5202-7878-4CE7-AE55-3D06EE7B6D2D}"
 EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "rabbitmq-demo", "src\rabbitmq-demo\rabbitmq-demo.xproj", "{21CBCEE3-2E63-4597-8C5A-79CFE0544EAA}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "rabbitmq-demo.tests", "test\rabbitmq-demo.tests\rabbitmq-demo.tests.xproj", "{EC55DCE3-BEF7-4FA7-929C-E64E77944737}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -48,6 +52,14 @@ Global
 		{06CE5202-7878-4CE7-AE55-3D06EE7B6D2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{06CE5202-7878-4CE7-AE55-3D06EE7B6D2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{06CE5202-7878-4CE7-AE55-3D06EE7B6D2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21CBCEE3-2E63-4597-8C5A-79CFE0544EAA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21CBCEE3-2E63-4597-8C5A-79CFE0544EAA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21CBCEE3-2E63-4597-8C5A-79CFE0544EAA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21CBCEE3-2E63-4597-8C5A-79CFE0544EAA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC55DCE3-BEF7-4FA7-929C-E64E77944737}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC55DCE3-BEF7-4FA7-929C-E64E77944737}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC55DCE3-BEF7-4FA7-929C-E64E77944737}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC55DCE3-BEF7-4FA7-929C-E64E77944737}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -58,5 +70,7 @@ Global
 		{D534A3BB-39BD-4CD5-A7A9-4337D5167CE3} = {70F82131-0C7C-4878-842A-F8441DA2C14F}
 		{62212806-3E2B-4B53-8505-F09422C2FF18} = {0D0E8683-8A9A-4C40-84A3-E7225B4994D1}
 		{06CE5202-7878-4CE7-AE55-3D06EE7B6D2D} = {70F82131-0C7C-4878-842A-F8441DA2C14F}
+		{21CBCEE3-2E63-4597-8C5A-79CFE0544EAA} = {0D0E8683-8A9A-4C40-84A3-E7225B4994D1}
+		{EC55DCE3-BEF7-4FA7-929C-E64E77944737} = {70F82131-0C7C-4878-842A-F8441DA2C14F}
 	EndGlobalSection
 EndGlobal
