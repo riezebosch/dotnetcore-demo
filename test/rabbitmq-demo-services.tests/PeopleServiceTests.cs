@@ -1,8 +1,5 @@
-﻿using Autofac;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using rabbitmq_demo;
-using rabbitmq_demo_service;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +9,7 @@ using Xunit;
 
 namespace rabbitmq_demo_services.tests
 {
-    public class Class1
+    public class PeopleServiceTests
     {
         /// <summary>
         /// https://docs.efproject.net/en/latest/miscellaneous/testing.html#writing-tests
@@ -48,37 +45,7 @@ namespace rabbitmq_demo_services.tests
                 Assert.Equal(EntityState.Unchanged, entry.State);
             }
         }
-
-        ManualResetEvent wait;
-        [Fact]
-        public void GivenCreatePersonCommandSendWhenServiceIsListeningTheCommandShouldBeProcessed()
-        {
-            using (ConfigureServices())
-            using (var sender = new Sender())
-            using (wait = new ManualResetEvent(false))
-            {
-                sender.Publish(new CreatePerson { FirstName = "test", LastName = "man" });
-                Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
-            }
-        }
-
-        private IContainer ConfigureServices()
-        {
-            var builder = new ContainerBuilder();
-
-            builder.RegisterType<DemoContext>();
-            builder.RegisterType<PeopleService>();
-            builder.RegisterType<Receiver>();
-            builder.RegisterInstance(CreateOptions());
-
-            var container = builder.Build();
-            container
-                .Resolve<Receiver>()
-                .Subscribe<CreatePerson>(container.Resolve<PeopleService>().Execute)
-                .ContinueWith(m => wait.Set());
-
-            return container;
-        }
     }
 }
+
 

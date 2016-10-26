@@ -6,10 +6,13 @@
 
   "dependencies": {
     "ef-demo": "1.0.0-*",
+    "rabbitmq-demo": "1.0.0-*",
+    "Autofac": "4.1.1",
     "Microsoft.NETCore.App": {
       "type": "platform",
       "version": "1.0.1"
-    }
+    },
+    "Microsoft.EntityFrameworkCore.InMemory": "1.0.1"
   },
 
   "frameworks": {
