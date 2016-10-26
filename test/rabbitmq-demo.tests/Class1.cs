@@ -17,6 +17,52 @@ namespace rabbitmq_demo.tests
         public void SendMessageShouldBeReceived()
         {
             // Arrange
+            var input = new Person { FirstName = "Test", LastName = "Man" };
+
+            using (var wait = new ManualResetEvent(false))
+            using (var listener = new Listener())
+            {
+                Person output = null;
+
+                // Act
+                listener.Received += (o, person) =>
+                {
+                    output = person;
+                    wait.Set();
+                };
+
+                Send(input);
+                Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
+                Assert.Equal(input, output, new PersonComparer());
+            }
+        }
+
+        [Fact]
+        public void SubsequentSecondMessageShouldBeReceived()
+        {
+            using (var wait = new CountdownEvent(2))
+            using (var listener = new Listener())
+            {
+                var people = new List<Person>();
+                listener.Received += (o, person) =>
+                {
+                    people.Add(person);
+                    wait.Signal();
+                };
+
+                var first = new Person { FirstName = "first" };
+                var second = new Person { FirstName = "second" };
+
+                Send(first);
+                Send(second);
+
+                Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
+                Assert.Equal(new[] { first, second }, people, new PersonComparer());
+            }
+        }
+
+        private static void Send(Person input)
+        {
             var factory = new ConnectionFactory() { HostName = "localhost" };
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
@@ -27,8 +73,8 @@ namespace rabbitmq_demo.tests
                                  autoDelete: false,
                                  arguments: null);
 
-                var person = new Person { FirstName = "Test", LastName = "Man" };
-                var message = JsonConvert.SerializeObject(person);
+
+                var message = JsonConvert.SerializeObject(input);
                 var body = Encoding.UTF8.GetBytes(message);
 
                 channel.BasicPublish(exchange: "",
@@ -36,36 +82,48 @@ namespace rabbitmq_demo.tests
                                      basicProperties: null,
                                      body: body);
             }
+        }
 
-            using (var connection = factory.CreateConnection())
-            using (var channel = connection.CreateModel())
+        class Listener : IDisposable
+        {
+            IConnection connection;
+            IModel channel;
+
+            public event EventHandler<Person> Received;
+
+            public Listener()
             {
-                channel.QueueDeclare(queue: "hello",
-                                 durable: false,
-                                 exclusive: false,
-                                 autoDelete: false,
-                                 arguments: null);
-
-                using (var wait = new AutoResetEvent(false))
+                IConnectionFactory factory = new ConnectionFactory() { HostName = "localhost" };
+                connection = factory.CreateConnection();
+                channel = connection.CreateModel();
                 {
-                    Person person = null;
-
-                    var consumer = new EventingBasicConsumer(channel);
-                    consumer.Received += (model, ea) =>
-                    {
-                        var body = ea.Body;
-                        var message = Encoding.UTF8.GetString(body);
-                        person = JsonConvert.DeserializeObject<Person>(message);
-                        wait.Set();
-                    };
-
-                    channel.BasicConsume(queue: "hello",
-                                         noAck: true,
-                                         consumer: consumer);
-
-                    Assert.True(wait.WaitOne(TimeSpan.FromSeconds(30)));
-                    Assert.Equal(new Person { FirstName = "Test", LastName = "Man" }, person, new PersonComparer());
+                    channel.QueueDeclare(queue: "hello",
+                                     durable: false,
+                                     exclusive: false,
+                                     autoDelete: false,
+                                     arguments: null);
                 }
+
+                var consumer = new EventingBasicConsumer(channel);
+                consumer.Received += (model, ea) =>
+                {
+                    var body = ea.Body;
+                    var message = Encoding.UTF8.GetString(body);
+
+                    var person = JsonConvert.DeserializeObject<Person>(message);
+                    Received?.Invoke(this, person);
+                };
+
+                channel.BasicConsume(queue: "hello",
+                                 noAck: true,
+                                 consumer: consumer);
+            }
+
+            
+            public void Dispose()
+            {
+                connection.Dispose();
+                channel.Dispose();
             }
         }
     }
