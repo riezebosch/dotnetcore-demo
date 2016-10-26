@@ -61,24 +61,47 @@ namespace rabbitmq_demo.tests
             }
         }
 
+        [Fact]
+        public void TwoListenersBothReceiveMessageFromQueue()
+        {
+            using (var wait = new CountdownEvent(2))
+            using (var listener1 = new Listener())
+            using (var listener2 = new Listener())
+            {
+                var people = new List<Person>();
+                listener1.Received += (o, person) =>
+                {
+                    people.Add(person);
+                    wait.Signal();
+                };
+
+                listener2.Received += (o, person) =>
+                {
+                    people.Add(person);
+                    wait.Signal();
+                };
+
+                var messsage = new Person { FirstName = "first" };
+
+                Send(messsage);
+
+                Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
+                Assert.Equal(new[] { messsage, messsage }, people, new PersonComparer());
+            }
+        }
+
         private static void Send(Person input)
         {
             var factory = new ConnectionFactory() { HostName = "localhost" };
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-                channel.QueueDeclare(queue: "hello",
-                                 durable: false,
-                                 exclusive: false,
-                                 autoDelete: false,
-                                 arguments: null);
-
+                channel.ExchangeDeclare(exchange: "logs", type: ExchangeType.Fanout);
 
                 var message = JsonConvert.SerializeObject(input);
                 var body = Encoding.UTF8.GetBytes(message);
-
-                channel.BasicPublish(exchange: "",
-                                     routingKey: "hello",
+                channel.BasicPublish(exchange: "logs",
+                                     routingKey: "",
                                      basicProperties: null,
                                      body: body);
             }
@@ -96,13 +119,14 @@ namespace rabbitmq_demo.tests
                 IConnectionFactory factory = new ConnectionFactory() { HostName = "localhost" };
                 connection = factory.CreateConnection();
                 channel = connection.CreateModel();
-                {
-                    channel.QueueDeclare(queue: "hello",
-                                     durable: false,
-                                     exclusive: false,
-                                     autoDelete: false,
-                                     arguments: null);
-                }
+
+                channel.ExchangeDeclare(exchange: "logs", type: ExchangeType.Fanout);
+
+                var queueName = channel.QueueDeclare().QueueName;
+                channel.QueueBind(queue: queueName,
+                                  exchange: "logs",
+                                  routingKey: "");
+
 
                 var consumer = new EventingBasicConsumer(channel);
                 consumer.Received += (model, ea) =>
@@ -114,12 +138,12 @@ namespace rabbitmq_demo.tests
                     Received?.Invoke(this, person);
                 };
 
-                channel.BasicConsume(queue: "hello",
+                channel.BasicConsume(queue: queueName,
                                  noAck: true,
                                  consumer: consumer);
             }
 
-            
+
             public void Dispose()
             {
                 connection.Dispose();
