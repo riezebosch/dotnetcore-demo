@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Autofac;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using rabbitmq_demo;
 using rabbitmq_demo_service;
@@ -48,26 +49,37 @@ namespace rabbitmq_demo_services.tests
             }
         }
 
+        ManualResetEvent wait;
         [Fact]
         public void GivenCreatePersonCommandSendWhenServiceIsListeningTheCommandShouldBeProcessed()
         {
-            using (var context = new DemoContext(CreateOptions()))
-            using (var service = new PeopleService(context))
+            using (ConfigureServices())
             using (var sender = new Sender())
-            using (var receiver = new Receiver())
-            using (var wait = new ManualResetEvent(false))
+            using (wait = new ManualResetEvent(false))
             {
-                receiver.Subscribe<CreatePerson>(command =>
+                sender.Publish(new CreatePerson { FirstName = "test", LastName = "man" });
+                Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
+            }
+        }
+
+        private IContainer ConfigureServices()
+        {
+            var builder = new ContainerBuilder();
+
+            builder.RegisterType<DemoContext>();
+            builder.RegisterType<PeopleService>();
+            builder.RegisterType<Receiver>();
+            builder.RegisterInstance(CreateOptions());
+
+            var container = builder.Build();
+            container.Resolve<Receiver>().Subscribe<CreatePerson>(command =>
                 {
-                    service.Execute(command);
+                    container.Resolve<PeopleService>().Execute(command);
                     wait.Set();
                 });
 
-                sender.Publish(new CreatePerson { FirstName = "test", LastName = "man" });
-
-                wait.WaitOne(TimeSpan.FromSeconds(5));
-                Assert.True(context.People.Any());
-            }
+            return container;
         }
     }
 }
+
