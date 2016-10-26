@@ -14,7 +14,7 @@ namespace rabbitmq_demo.tests
     public class Class1
     {
         [Fact]
-        public void SendMessageShouldBeReceived()
+        public void PublishMessageShouldBeReceivedBySubsriber()
         {
             // Arrange
             var input = new Person { FirstName = "Test", LastName = "Man" };
@@ -38,7 +38,7 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public void SubsequentMessageShouldBeReceived()
+        public void SubsequentMessageShouldBeReceivedBySubscriber()
         {
             using (var wait = new CountdownEvent(2))
             using (var listener = new Listener())
@@ -62,7 +62,7 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public void TwoListenersBothReceiveMessageFromQueue()
+        public void TwoListenersBothReceiveMessageAfterPublish()
         {
             using (var wait = new CountdownEvent(2))
             using (var listener1 = new Listener())
@@ -111,13 +111,14 @@ namespace rabbitmq_demo.tests
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-                var exchange = typeof(T).FullName;
+                var exchange = "demo";
+                var routingKey = typeof(T).FullName;
                 channel.ExchangeDeclare(exchange: exchange, type: ExchangeType.Fanout);
 
                 var message = JsonConvert.SerializeObject(input);
                 var body = Encoding.UTF8.GetBytes(message);
                 channel.BasicPublish(exchange: exchange,
-                                     routingKey: "",
+                                     routingKey: routingKey,
                                      basicProperties: null,
                                      body: body);
             }
@@ -133,8 +134,6 @@ namespace rabbitmq_demo.tests
                 IConnectionFactory factory = new ConnectionFactory() { HostName = "localhost" };
                 connection = factory.CreateConnection();
                 channel = connection.CreateModel();
-
-               
             }
 
             public void Dispose()
@@ -145,13 +144,14 @@ namespace rabbitmq_demo.tests
 
             public void Subscribe<T>(Action<T> action)
             {
-                var exchange = typeof(T).FullName;
+                var exchange = "demo";
+                var routingkey = typeof(T).FullName;
                 channel.ExchangeDeclare(exchange: exchange, type: ExchangeType.Fanout);
 
                 var queueName = channel.QueueDeclare().QueueName;
                 channel.QueueBind(queue: queueName,
                                   exchange: exchange,
-                                  routingKey: "");
+                                  routingKey: routingkey);
 
 
                 var consumer = new EventingBasicConsumer(channel);
