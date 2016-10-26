@@ -25,11 +25,7 @@ namespace rabbitmq_demo.tests
                 Person output = null;
 
                 // Act
-                listener.Subscribe<Person>(person =>
-                {
-                    output = person;
-                    wait.Set();
-                });
+                listener.Subscribe<Person>(person => output = person).ContinueWith(message => wait.Set());
 
                 using (var sender = new Sender())
                 {

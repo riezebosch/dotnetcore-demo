@@ -72,11 +72,10 @@ namespace rabbitmq_demo_services.tests
             builder.RegisterInstance(CreateOptions());
 
             var container = builder.Build();
-            container.Resolve<Receiver>().Subscribe<CreatePerson>(command =>
-                {
-                    container.Resolve<PeopleService>().Execute(command);
-                    wait.Set();
-                });
+            container
+                .Resolve<Receiver>()
+                .Subscribe<CreatePerson>(container.Resolve<PeopleService>().Execute)
+                .ContinueWith(m => wait.Set());
 
             return container;
         }

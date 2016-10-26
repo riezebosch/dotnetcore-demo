@@ -32,7 +32,7 @@ namespace rabbitmq_demo
             channel.Dispose();
         }
 
-        public void Subscribe<T>(Action<T> action)
+        public IContinuation Subscribe<T>(Action<T> action)
         {
             var routingkey = typeof(T).FullName;
             channel.ExchangeDeclare(exchange: _exchange, type: ExchangeType.Fanout);
@@ -44,6 +44,8 @@ namespace rabbitmq_demo
 
 
             var consumer = new EventingBasicConsumer(channel);
+
+            var continuation = new Contination();
             consumer.Received += (model, ea) =>
             {
                 var body = ea.Body;
@@ -51,11 +53,30 @@ namespace rabbitmq_demo
 
                 var item = JsonConvert.DeserializeObject<T>(message);
                 action(item);
+
+                continuation.Continue(message);
             };
 
             channel.BasicConsume(queue: queueName,
                              noAck: true,
                              consumer: consumer);
+
+            return continuation;
+        }
+
+        private class Contination : IContinuation
+        {
+            private Action<string> _a;
+
+            public void Continue(string message)
+            {
+                _a?.Invoke(message);
+            }
+
+            public void ContinueWith(Action<string> a)
+            {
+                _a = a;
+            }
         }
     }
 }
