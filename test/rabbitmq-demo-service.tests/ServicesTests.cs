@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using Xunit;
 
-namespace rabbitmq_demo_services.tests
+namespace rabbitmq_demo_service.tests
 {
     public class ServicesTests
     {

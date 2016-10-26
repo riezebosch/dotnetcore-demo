@@ -28,7 +28,7 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "rabbitmq-demo.tests", "test
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "rabbitmq-demo-service", "src\rabbitmq-demo-service\rabbitmq-demo-service.xproj", "{0C76EBA9-FB61-4D94-905E-121E0AD25A67}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "rabbitmq-demo-services.tests", "test\rabbitmq-demo-services.tests\rabbitmq-demo-services.tests.xproj", "{60E78C5F-23D6-46A8-878F-ABBB4FFA8059}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "rabbitmq-demo-service.tests", "test\rabbitmq-demo-service.tests\rabbitmq-demo-service.tests.xproj", "{60E78C5F-23D6-46A8-878F-ABBB4FFA8059}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

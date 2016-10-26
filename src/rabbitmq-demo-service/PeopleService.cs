@@ -1,6 +1,7 @@
-﻿using System;
+﻿using ef_demo;
+using System;
 
-namespace rabbitmq_demo_services
+namespace rabbitmq_demo_service
 {
     public class PeopleService : IDisposable
     {

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using ef_demo;
+using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;

@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using ef_demo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using rabbitmq_demo;
@@ -9,7 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace rabbitmq_demo_services
+namespace rabbitmq_demo_service
 {
     public class Services : IDisposable
     {

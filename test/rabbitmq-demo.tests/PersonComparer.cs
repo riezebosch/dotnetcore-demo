@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ef_demo;
+using System;
 using System.Collections.Generic;
 
 namespace rabbitmq_demo.tests

@@ -1,5 +1,8 @@
-﻿public class CreatePerson
+﻿namespace rabbitmq_demo_service
 {
-    public string FirstName { get; set; }
-    public string LastName { get; set; }
+    public class CreatePerson
+    {
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
+    }
 }
