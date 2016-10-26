@@ -25,36 +25,36 @@ namespace rabbitmq_demo.tests
                 Person output = null;
 
                 // Act
-                listener.Received += (o, person) =>
+                listener.Subscribe<Person>(person =>
                 {
                     output = person;
                     wait.Set();
-                };
+                });
 
-                Send(input);
+                Publish(input);
                 Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
                 Assert.Equal(input, output, new PersonComparer());
             }
         }
 
         [Fact]
-        public void SubsequentSecondMessageShouldBeReceived()
+        public void SubsequentMessageShouldBeReceived()
         {
             using (var wait = new CountdownEvent(2))
             using (var listener = new Listener())
             {
                 var people = new List<Person>();
-                listener.Received += (o, person) =>
+                listener.Subscribe<Person>(person =>
                 {
                     people.Add(person);
                     wait.Signal();
-                };
+                });
 
                 var first = new Person { FirstName = "first" };
                 var second = new Person { FirstName = "second" };
 
-                Send(first);
-                Send(second);
+                Publish(first);
+                Publish(second);
 
                 Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
                 Assert.Equal(new[] { first, second }, people, new PersonComparer());
@@ -69,38 +69,54 @@ namespace rabbitmq_demo.tests
             using (var listener2 = new Listener())
             {
                 var people = new List<Person>();
-                listener1.Received += (o, person) =>
+                listener1.Subscribe<Person>(person =>
                 {
                     people.Add(person);
                     wait.Signal();
-                };
+                });
 
-                listener2.Received += (o, person) =>
+                listener2.Subscribe<Person>(person =>
                 {
                     people.Add(person);
                     wait.Signal();
-                };
+                });
 
                 var messsage = new Person { FirstName = "first" };
-
-                Send(messsage);
+                Publish(messsage);
 
                 Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
                 Assert.Equal(new[] { messsage, messsage }, people, new PersonComparer());
             }
         }
 
-        private static void Send(Person input)
+        [Fact]
+        public void OneListenerReceivesTwoMessagesOfDifferentType()
+        {
+            using (var wait = new CountdownEvent(2))
+            using (var listener = new Listener())
+            {
+                listener.Subscribe<Person>(person => wait.Signal());
+                listener.Subscribe<string>(message => wait.Signal());
+
+                Publish(new Person { FirstName = "first" });
+                Publish("just simple text");
+
+                Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
+            }
+        }
+
+        private static void Publish<T>(T input)
         {
             var factory = new ConnectionFactory() { HostName = "localhost" };
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-                channel.ExchangeDeclare(exchange: "logs", type: ExchangeType.Fanout);
+                var exchange = typeof(T).FullName;
+                channel.ExchangeDeclare(exchange: exchange, type: ExchangeType.Fanout);
 
                 var message = JsonConvert.SerializeObject(input);
                 var body = Encoding.UTF8.GetBytes(message);
-                channel.BasicPublish(exchange: "logs",
+                channel.BasicPublish(exchange: exchange,
                                      routingKey: "",
                                      basicProperties: null,
                                      body: body);
@@ -112,19 +128,29 @@ namespace rabbitmq_demo.tests
             IConnection connection;
             IModel channel;
 
-            public event EventHandler<Person> Received;
-
             public Listener()
             {
                 IConnectionFactory factory = new ConnectionFactory() { HostName = "localhost" };
                 connection = factory.CreateConnection();
                 channel = connection.CreateModel();
 
-                channel.ExchangeDeclare(exchange: "logs", type: ExchangeType.Fanout);
+               
+            }
+
+            public void Dispose()
+            {
+                connection.Dispose();
+                channel.Dispose();
+            }
+
+            public void Subscribe<T>(Action<T> action)
+            {
+                var exchange = typeof(T).FullName;
+                channel.ExchangeDeclare(exchange: exchange, type: ExchangeType.Fanout);
 
                 var queueName = channel.QueueDeclare().QueueName;
                 channel.QueueBind(queue: queueName,
-                                  exchange: "logs",
+                                  exchange: exchange,
                                   routingKey: "");
 
 
@@ -134,20 +160,13 @@ namespace rabbitmq_demo.tests
                     var body = ea.Body;
                     var message = Encoding.UTF8.GetString(body);
 
-                    var person = JsonConvert.DeserializeObject<Person>(message);
-                    Received?.Invoke(this, person);
+                    var item = JsonConvert.DeserializeObject<T>(message);
+                    action(item);
                 };
 
                 channel.BasicConsume(queue: queueName,
                                  noAck: true,
                                  consumer: consumer);
-            }
-
-
-            public void Dispose()
-            {
-                connection.Dispose();
-                channel.Dispose();
             }
         }
     }
