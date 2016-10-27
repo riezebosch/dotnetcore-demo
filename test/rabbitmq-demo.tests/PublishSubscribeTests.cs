@@ -117,7 +117,7 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public void ChainingFuncsWithContinuations()
+        public void FirstFuncThenFuncWithTransformation()
         {
             var sb = new StringBuilder();
             var result = First.Do<string, StringBuilder>(m => sb.Append(m))
@@ -129,25 +129,50 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public void ChainingActionsWithContinuations()
+        public void FirstFuncThenActionWithParameter()
         {
-            int executed = 0;
-            Action<string> nothing = m => executed++;
+            bool executed = false;
+            Action<string> nothing = m => executed = true;
             var result = First
                 .Do<string, string>(m => m)
                 .Then(nothing)
                 .Invoke("m");
 
-            Assert.Equal(1, executed);
+            Assert.True(executed);
         }
 
         [Fact]
-        public void FirstStartWithAction()
+        public void FirstAction()
         {
-            int executed = 0;
-            Action<string> nothing = m => executed++;
+            bool executed = false;
+            Action<string> nothing = m => executed = true;
+            var result = First
+                .Do(nothing)
+                .Invoke("m");
+
+            Assert.True(executed);
+        }
+
+        [Fact]
+        public void FirstActionWithoutParametes()
+        {
+            bool executed = false;
+            Action nothing = () => executed = true;
             var result = First
                 .Do<string>(nothing)
+                .Invoke("m");
+
+            Assert.True(executed);
+        }
+
+        [Fact]
+        public void FirstFuncThenActionWithoutParameters()
+        {
+            int executed = 0;
+            Action nothing = () => executed++;
+            var result = First
+                .Do<string, string>(m => m)
+                .Then(nothing)
                 .Invoke("m");
 
             Assert.Equal(1, executed);
@@ -165,7 +190,10 @@ namespace rabbitmq_demo.tests
                 return new Invoker<T, T>(m => m).Then(a);
             }
 
-
+            public static IInvoke<T, T> Do<T>(Action a)
+            {
+                return new Invoker<T, T>(m => m).Then(a);
+            }
         }
     }
 
@@ -183,9 +211,14 @@ namespace rabbitmq_demo.tests
             return a(input);
         }
 
+        public IInvoke<T, T> Then(Action p)
+        {
+            return Then(m => { p(); return m; });
+        }
+
         public IInvoke<T, T> Then(Action<T> p)
         {
-            return this.Then(m => { p(m); return m; });
+            return Then(m => { p(m); return m; });
         }
 
         public IInvoke<T, TNext> Then<TNext>(Func<T, TNext> p) where TNext : T
@@ -203,5 +236,6 @@ namespace rabbitmq_demo.tests
         TResult Invoke(T input);
         IInvoke<T, TNext> Then<TNext>(Func<T, TNext> p) where TNext : T;
         IInvoke<T, T> Then(Action<T> p);
+        IInvoke<T, T> Then(Action nothing);
     }
 }
