@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using FirstThen;
+using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -32,7 +33,7 @@ namespace rabbitmq_demo
             channel.Dispose();
         }
 
-        public IContinuation Subscribe<T>(Action<T> action)
+        public IDo<byte[], T> Subscribe<T>()
         {
             var routingkey = typeof(T).FullName;
             channel.ExchangeDeclare(exchange: _exchange, type: ExchangeType.Fanout);
@@ -45,38 +46,17 @@ namespace rabbitmq_demo
 
             var consumer = new EventingBasicConsumer(channel);
 
-            var continuation = new Contination();
-            consumer.Received += (model, ea) =>
-            {
-                var body = ea.Body;
-                var message = Encoding.UTF8.GetString(body);
+            var result = First
+                .Do<byte[], string>(Encoding.UTF8.GetString)
+                .Then(JsonConvert.DeserializeObject<T>);
 
-                var item = JsonConvert.DeserializeObject<T>(message);
-                action(item);
-
-                continuation.Continue(message);
-            };
+            consumer.Received += (model, ea) => result.Invoke(ea.Body);
 
             channel.BasicConsume(queue: queueName,
                              noAck: true,
                              consumer: consumer);
 
-            return continuation;
-        }
-
-        private class Contination : IContinuation
-        {
-            private Action<string> _a;
-
-            public void Continue(string message)
-            {
-                _a?.Invoke(message);
-            }
-
-            public void ContinueWith(Action<string> a)
-            {
-                _a = a;
-            }
+            return result;
         }
     }
 }

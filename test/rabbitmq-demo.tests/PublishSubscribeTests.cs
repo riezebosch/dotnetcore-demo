@@ -27,7 +27,10 @@ namespace rabbitmq_demo.tests
                 Person output = null;
 
                 // Act
-                listener.Subscribe<Person>(person => output = person).ContinueWith(message => wait.Set());
+                listener
+                    .Subscribe<Person>()
+                    .Then(p => output = p)
+                    .Then(() => wait.Set());
 
                 using (var sender = new Sender())
                 {
@@ -46,11 +49,10 @@ namespace rabbitmq_demo.tests
             using (var listener = new Receiver())
             {
                 var people = new List<Person>();
-                listener.Subscribe<Person>(person =>
-                {
-                    people.Add(person);
-                    wait.Signal();
-                });
+                listener
+                    .Subscribe<Person>()
+                    .Then(people.Add)
+                    .Then(() => wait.Signal());
 
                 var first = new Person { FirstName = "first" };
                 var second = new Person { FirstName = "second" };
@@ -74,17 +76,14 @@ namespace rabbitmq_demo.tests
             using (var listener2 = new Receiver())
             {
                 var people = new List<Person>();
-                listener1.Subscribe<Person>(person =>
-                {
-                    people.Add(person);
-                    wait.Signal();
-                });
-
-                listener2.Subscribe<Person>(person =>
-                {
-                    people.Add(person);
-                    wait.Signal();
-                });
+                listener1
+                    .Subscribe<Person>()
+                    .Then(people.Add)
+                    .Then(() => wait.Signal());
+                listener2
+                    .Subscribe<Person>()
+                    .Then(people.Add)
+                    .Then(() => wait.Signal());
 
                 var messsage = new Person { FirstName = "first" };
                 using (var sender = new Sender())
@@ -103,8 +102,8 @@ namespace rabbitmq_demo.tests
             using (var wait = new CountdownEvent(2))
             using (var listener = new Receiver())
             {
-                listener.Subscribe<Person>(person => wait.Signal());
-                listener.Subscribe<string>(message => wait.Signal());
+                listener.Subscribe<Person>().Then(() => wait.Signal());
+                listener.Subscribe<string>().Then(() => wait.Signal());
 
                 using (var sender = new Sender())
                 {

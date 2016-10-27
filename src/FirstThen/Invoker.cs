@@ -4,33 +4,54 @@ using System.Linq;
 
 namespace FirstThen
 {
-    internal class Invoker<TInput, TResult> : IInvoke<TInput, TResult>
+    internal class Invoker<TInput, TResult> : IDo<TInput, TResult>,  IFinally<TInput, TResult>
     {
-        private Func<TInput, TResult> a;
+        private Func<TInput, TResult> _transform;
+        private IExecute<TInput> _last;
 
-        public Invoker(Func<TInput, TResult> a)
+        public Invoker(Func<TInput, TResult> transform)
         {
-            this.a = a;
+            _transform = transform;
         }
 
-        public TResult Invoke(TInput input)
+        public void Invoke(TInput input)
         {
-            return a(input);
+            if (_last == null)
+            {
+                Finally().Execute(input);
+            }
+            else
+            {
+                _last.Invoke(input);
+            }
         }
 
-        public IInvoke<TInput, TResult> Then(Action p)
+        public IFinally<TInput, TResult> Finally()
         {
-            return Then(m => { p(); return m; });
+            return this;
         }
 
-        public IInvoke<TInput, TResult> Then(Action<TResult> p)
+        public IDo<TInput, TResult> Then(Action action)
         {
-            return Then(m => { p(m); return m; });
+            return Then(input => { action(); return input; });
         }
 
-        public IInvoke<TInput, TNext> Then<TNext>(Func<TResult, TNext> p) 
+        public IDo<TInput, TResult> Then(Action<TResult> action)
         {
-            return new Invoker<TInput, TNext>(m => p(a(m)));
+            return Then(input => { action(input); return input; });
+        }
+
+        public IDo<TInput, TNext> Then<TNext>(Func<TResult, TNext> transform) 
+        {
+            var next = new Invoker<TInput, TNext>(input => transform(_transform(input)));
+            _last = next;
+
+            return next;
+        }
+
+        TResult IFinally<TInput, TResult>.Execute(TInput input)
+        {
+            return _transform(input);
         }
     }
 }

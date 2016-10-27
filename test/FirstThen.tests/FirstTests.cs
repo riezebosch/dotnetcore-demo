@@ -17,7 +17,8 @@ namespace FirstThen.tests
                 .Then(builder => builder.Append("r"))
                 .Then(builder => builder.ToString())
                 .Then(s => s.ToUpper())
-                .Invoke("m");
+                .Finally()
+                .Execute("m");
 
             Assert.Equal("MR", result);
         }
@@ -27,7 +28,7 @@ namespace FirstThen.tests
         {
             bool executed = false;
             Action<string> nothing = m => executed = true;
-            var result = First
+            First
                 .Do<string, string>(m => m)
                 .Then(nothing)
                 .Invoke("m");
@@ -40,7 +41,7 @@ namespace FirstThen.tests
         {
             bool executed = false;
             Action<string> nothing = m => executed = true;
-            var result = First
+            First
                 .Do(nothing)
                 .Invoke("m");
 
@@ -48,11 +49,11 @@ namespace FirstThen.tests
         }
 
         [Fact]
-        public void FirstActionWithoutParametes()
+        public void FirstActionWithoutParameters()
         {
             bool executed = false;
             Action nothing = () => executed = true;
-            var result = First
+            First
                 .Do<string>(nothing)
                 .Invoke("m");
 
@@ -64,12 +65,38 @@ namespace FirstThen.tests
         {
             int executed = 0;
             Action nothing = () => executed++;
-            var result = First
+            First
                 .Do<string, string>(m => m)
                 .Then(nothing)
                 .Invoke("m");
 
             Assert.Equal(1, executed);
+        }
+
+        [Fact]
+        public void InvokeAlwaysExecutesOnLastActionEvenWhenPerformedHalfwayThroughToIntegrateTheWholeChainToBeExensible()
+        {
+            // Arrange
+            bool executed = false;
+            var first = First.Do<int, int>(i => i * 2);
+            first.Then(() => executed = true);
+
+            // Act
+            first.Invoke(4);
+
+            // Assert
+            Assert.True(executed);
+        }
+
+        [Fact]
+        public void ExcuteOnFinallyYieldsResult()
+        {
+            var result = First.Do<int, int>(i => i * 2)
+                .Then(i => $"transform the result into {i}")
+                .Finally()
+                .Execute(4);
+
+            Assert.Equal("transform the result into 8", result);
         }
     }
 }

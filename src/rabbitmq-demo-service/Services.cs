@@ -21,7 +21,7 @@ namespace rabbitmq_demo_service
             _container = Configure();
         }
 
-        public event Action<string> Received;
+        public event Action<object> Received;
 
         public void Dispose()
         {
@@ -40,8 +40,9 @@ namespace rabbitmq_demo_service
             var container = builder.Build();
             container
                 .Resolve<Receiver>()
-                .Subscribe<CreatePerson>(container.Resolve<PeopleService>().Execute)
-                .ContinueWith(m => Received?.Invoke(m));
+                .Subscribe<CreatePerson>()
+                .Then(container.Resolve<PeopleService>().Execute)
+                .Then(m => Received?.Invoke(m));
 
             return container;
         }
