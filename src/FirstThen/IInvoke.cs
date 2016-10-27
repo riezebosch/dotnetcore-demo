@@ -4,11 +4,11 @@ using System.Linq;
 
 namespace FirstThen
 {
-    public interface IInvoke<T, TResult>
+    public interface IInvoke<TInput, TResult>
     {
-        TResult Invoke(T input);
-        IInvoke<T, TNext> Then<TNext>(Func<T, TNext> p) where TNext : T;
-        IInvoke<T, T> Then(Action<T> p);
-        IInvoke<T, T> Then(Action nothing);
+        TResult Invoke(TInput input);
+        IInvoke<TInput, TNext> Then<TNext>(Func<TResult, TNext> p) ;
+        IInvoke<TInput, TResult> Then(Action<TResult> p);
+        IInvoke<TInput, TResult> Then(Action nothing);
     }
 }

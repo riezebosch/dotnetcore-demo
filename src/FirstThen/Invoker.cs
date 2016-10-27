@@ -4,33 +4,33 @@ using System.Linq;
 
 namespace FirstThen
 {
-    internal class Invoker<T, TResult> : IInvoke<T, TResult>
+    internal class Invoker<TInput, TResult> : IInvoke<TInput, TResult>
     {
-        private Func<T, TResult> a;
+        private Func<TInput, TResult> a;
 
-        public Invoker(Func<T, TResult> a)
+        public Invoker(Func<TInput, TResult> a)
         {
             this.a = a;
         }
 
-        public TResult Invoke(T input)
+        public TResult Invoke(TInput input)
         {
             return a(input);
         }
 
-        public IInvoke<T, T> Then(Action p)
+        public IInvoke<TInput, TResult> Then(Action p)
         {
             return Then(m => { p(); return m; });
         }
 
-        public IInvoke<T, T> Then(Action<T> p)
+        public IInvoke<TInput, TResult> Then(Action<TResult> p)
         {
             return Then(m => { p(m); return m; });
         }
 
-        public IInvoke<T, TNext> Then<TNext>(Func<T, TNext> p) where TNext : T
+        public IInvoke<TInput, TNext> Then<TNext>(Func<TResult, TNext> p) 
         {
-            return new Invoker<T, TNext>(p);
+            return new Invoker<TInput, TNext>(m => p(a(m)));
         }
     }
 }

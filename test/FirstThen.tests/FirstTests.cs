@@ -8,19 +8,18 @@ using Xunit;
 
 namespace FirstThen.tests
 {
-    class FirstTests
+    public class FirstTests
     {
-
         [Fact]
         public void FirstFuncThenFuncWithTransformation()
         {
-            var sb = new StringBuilder();
-            var result = First.Do<string, StringBuilder>(m => sb.Append(m))
+            var result = First.Do<string, StringBuilder>(new StringBuilder().Append)
+                .Then(builder => builder.Append("r"))
                 .Then(builder => builder.ToString())
                 .Then(s => s.ToUpper())
                 .Invoke("m");
 
-            Assert.Equal("M", result);
+            Assert.Equal("MR", result);
         }
 
         [Fact]
