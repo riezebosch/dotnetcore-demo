@@ -128,11 +128,48 @@ namespace rabbitmq_demo.tests
             Assert.Equal("M", result);
         }
 
+        [Fact]
+        public void ChainingActionsWithContinuations()
+        {
+            bool executed = false;
+            Action<string> nothing = m => executed = true;
+
+            First.Do<string>(nothing).Invoke("m");
+
+            Assert.True(executed);
+        }
+
         static class First
         {
             public static IInvoke<T, TResult> Do<T, TResult>(Func<T, TResult> a)
             {
                 return new Invoker<T, TResult>(a);
+            }
+
+            public static IInvoke<T, T> Do<T>(Action<T> a)
+            {
+                return new InvokerAction<T>(a);
+            }
+
+            public class InvokerAction<T> : IInvoke<T, T>
+            {
+                private Action<T> a;
+
+                public InvokerAction(Action<T> a)
+                {
+                    this.a = a;
+                }
+
+                public T Invoke(T input)
+                {
+                    a(input);
+                    return input;
+                }
+
+                public IInvoke<T, TNext> Then<TNext>(Func<T, TNext> p) where TNext : T
+                {
+                    return new Invoker<T, TNext>(p);
+                }
             }
         }
     }
