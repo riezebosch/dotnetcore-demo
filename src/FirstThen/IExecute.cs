@@ -1,7 +1,12 @@
 ﻿namespace FirstThen
 {
-    public interface IFinally<in TInput, out TResult>
+    public interface IExecute
     {
-        TResult Execute(TInput input);
+        void Invoke();
+    }
+
+    public interface IExecute<TInput>
+    {
+        void Invoke(TInput input);
     }
 }

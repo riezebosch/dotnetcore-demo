@@ -12,6 +12,11 @@ namespace FirstThen
             return new Invoker<T, TResult>(a);
         }
 
+        public static IDo<TResult> Do<TResult>(Func<TResult> a)
+        {
+            return new Invoker<TResult>(a);
+        }
+
         public static IDo<T, T> Do<T>(Action<T> a)
         {
             return new Invoker<T, T>(m => m).Then(a);

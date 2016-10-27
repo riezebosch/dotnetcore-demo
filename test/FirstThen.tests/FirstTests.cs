@@ -98,5 +98,57 @@ namespace FirstThen.tests
 
             Assert.Equal("transform the result into 8", result);
         }
+
+        [Fact]
+        public void FirstFuncWithoutParameters()
+        {
+            var result = First
+                .Do(() => "input")
+                .Then(m => m + m)
+                .Finally()
+                .Execute();
+            Assert.Equal("inputinput", result);
+        }
+
+        [Fact]
+        public void FirstFuncInvokeOnLast()
+        {
+            bool executed = false;
+            var first = First
+                .Do(() => "input");
+
+            first.Then(() => executed = true);
+
+            first.Invoke();
+            Assert.True(executed);
+        }
+
+        [Fact]
+        public void FirstFuncWithoutParametersThenActionIsExecuted()
+        {
+            bool executed = false;
+            Action nothing = () => executed = true;
+            var result = First
+                .Do(() => "input")
+                .Then(nothing)
+                .Finally()
+                .Execute();
+
+            Assert.True(executed);
+        }
+
+        [Fact]
+        public void FirstFuncWithoutParametersThenResultIsTransient()
+        {
+            Action nothing = () => { };
+            var result = First
+                .Do(() => "input")
+                .Then(nothing)
+                .Finally()
+                .Execute();
+
+
+            Assert.Equal("input", result);
+        }
     }
 }
