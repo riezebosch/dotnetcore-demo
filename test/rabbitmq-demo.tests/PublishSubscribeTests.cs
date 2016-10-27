@@ -141,6 +141,18 @@ namespace rabbitmq_demo.tests
             Assert.Equal(1, executed);
         }
 
+        [Fact]
+        public void FirstStartWithAction()
+        {
+            int executed = 0;
+            Action<string> nothing = m => executed++;
+            var result = First
+                .Do<string>(nothing)
+                .Invoke("m");
+
+            Assert.Equal(1, executed);
+        }
+
         static class First
         {
             public static IInvoke<T, TResult> Do<T, TResult>(Func<T, TResult> a)
@@ -148,12 +160,12 @@ namespace rabbitmq_demo.tests
                 return new Invoker<T, TResult>(a);
             }
 
-            //public static IInvoke<T, T> Do<T>(Action<T> a)
-            //{
-            //    return new Invoker<T, T>(a);
-            //}
+            public static IInvoke<T, T> Do<T>(Action<T> a)
+            {
+                return new Invoker<T, T>(m => m).Then(a);
+            }
 
-            
+
         }
     }
 
