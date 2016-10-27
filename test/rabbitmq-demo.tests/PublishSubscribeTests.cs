@@ -2,6 +2,7 @@
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using rabbitmq_demo.tests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -114,5 +115,51 @@ namespace rabbitmq_demo.tests
                 Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
             }
         }
+
+        [Fact]
+        public void ChainingFuncsWithContinuations()
+        {
+            var sb = new StringBuilder();
+            var result = First.Do<string, StringBuilder>(m => sb.Append(m))
+                .Then(builder => builder.ToString())
+                .Then(s => s.ToUpper())
+                .Invoke("m");
+
+            Assert.Equal("M", result);
+        }
+
+        static class First
+        {
+            public static IInvoke<T, TResult> Do<T, TResult>(Func<T, TResult> a)
+            {
+                return new Invoker<T, TResult>(a);
+            }
+        }
+    }
+
+    internal class Invoker<T, TResult> : IInvoke<T, TResult>
+    {
+        private Func<T, TResult> a;
+
+        public Invoker(Func<T, TResult> a)
+        {
+            this.a = a;
+        }
+
+        public TResult Invoke(T input)
+        {
+            return a(input);
+        }
+
+        public IInvoke<T, TNext> Then<TNext>(Func<T, TNext> p) where TNext : T
+        {
+            return new Invoker<T, TNext>(p);
+        }
+    }
+
+    public interface IInvoke<T, TResult>
+    {
+        TResult Invoke(T input);
+        IInvoke<T, TNext> Then<TNext>(Func<T, TNext> p) where TNext : T;
     }
 }
