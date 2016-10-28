@@ -33,7 +33,7 @@ namespace rabbitmq_demo
             channel.Dispose();
         }
 
-        public IDo<T, T> Subscribe<T>()
+        public IDo<T> Subscribe<T>()
         {
             var routingkey = typeof(T).FullName;
             channel.ExchangeDeclare(exchange: _exchange, type: ExchangeType.Fanout);
@@ -43,25 +43,17 @@ namespace rabbitmq_demo
                               exchange: _exchange,
                               routingKey: routingkey);
 
-
+            var invocant = new Invocant<byte[]>();
             var consumer = new EventingBasicConsumer(channel);
-
-            var result = First.Do<T, T>(m => m);
-
-            consumer.Received += (model, ea) =>
-            {
-                result.Invoke(First
-                    .Do<byte[], string>(Encoding.UTF8.GetString)
-                    .Then(JsonConvert.DeserializeObject<T>)
-                    .Finally()
-                    .Execute(ea.Body));
-            };
+            consumer.Received += (model, ea) => invocant.Invoke(ea.Body);
 
             channel.BasicConsume(queue: queueName,
                              noAck: true,
                              consumer: consumer);
 
-            return result;
+            return invocant
+                .Then(Encoding.UTF8.GetString)
+                .Then(JsonConvert.DeserializeObject<T>);
         }
     }
 }

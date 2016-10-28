@@ -13,12 +13,15 @@ namespace FirstThen.tests
         [Fact]
         public void FirstFuncThenFuncWithTransformation()
         {
-            var result = First.Do<string, StringBuilder>(new StringBuilder().Append)
+            var invocant = new Invocant<string>();
+            string result = string.Empty;
+            invocant.Then(new StringBuilder().Append)
                 .Then(builder => builder.Append("r"))
                 .Then(builder => builder.ToString())
                 .Then(s => s.ToUpper())
-                .Finally()
-                .Execute("m");
+                .Then(s => result = s);
+
+            invocant.Invoke("m");
 
             Assert.Equal("MR", result);
         }
@@ -27,11 +30,14 @@ namespace FirstThen.tests
         public void FirstFuncThenActionWithParameter()
         {
             bool executed = false;
-            Action<string> nothing = m => executed = true;
-            First
-                .Do<string, string>(m => m)
-                .Then(nothing)
-                .Invoke("m");
+            Action<string> action = m => executed = true;
+
+            var invocant = new Invocant<string>();
+            invocant
+                .Then(m => m)
+                .Then(action);
+
+            invocant.Invoke("m");
 
             Assert.True(executed);
         }
@@ -40,10 +46,12 @@ namespace FirstThen.tests
         public void FirstAction()
         {
             bool executed = false;
-            Action<string> nothing = m => executed = true;
-            First
-                .Do(nothing)
-                .Invoke("m");
+            Action<string> action = m => executed = true;
+
+            var invocant = new Invocant<string>();
+            invocant.Then(action);
+
+            invocant.Invoke("m");
 
             Assert.True(executed);
         }
@@ -52,10 +60,12 @@ namespace FirstThen.tests
         public void FirstActionWithoutParameters()
         {
             bool executed = false;
-            Action nothing = () => executed = true;
-            First
-                .Do<string>(nothing)
-                .Invoke("m");
+            Action action = () => executed = true;
+
+            var invocant = new Invocant<string>();
+            invocant.Then(action);
+
+            invocant.Invoke("m");
 
             Assert.True(executed);
         }
@@ -63,107 +73,68 @@ namespace FirstThen.tests
         [Fact]
         public void FirstFuncThenActionWithoutParameters()
         {
-            int executed = 0;
-            Action nothing = () => executed++;
-            First
-                .Do<string, string>(m => m)
-                .Then(nothing)
-                .Invoke("m");
-
-            Assert.Equal(1, executed);
-        }
-
-        [Fact]
-        public void InvokeAlwaysExecutesOnLastActionEvenWhenPerformedHalfwayThroughToIntegrateTheWholeChainToBeExensible()
-        {
-            // Arrange
-            bool executed = false;
-            var first = First.Do<int, int>(i => i * 2);
-            first.Then(() => executed = true);
-
-            // Act
-            first.Invoke(4);
-
-            // Assert
-            Assert.True(executed);
-        }
-
-        [Fact]
-        public void ExcuteOnFinallyYieldsResult()
-        {
-            var result = First.Do<int, int>(i => i * 2)
-                .Then(i => $"transform the result into {i}")
-                .Finally()
-                .Execute(4);
-
-            Assert.Equal("transform the result into 8", result);
-        }
-
-        [Fact]
-        public void FirstFuncWithoutParameters()
-        {
-            var result = First
-                .Do(() => "input")
-                .Then(m => m + m)
-                .Finally()
-                .Execute();
-            Assert.Equal("inputinput", result);
-        }
-
-        [Fact]
-        public void FirstFuncInvokeOnLast()
-        {
-            bool executed = false;
-            var first = First
-                .Do(() => "input");
-
-            first.Then(() => executed = true);
-
-            first.Invoke();
-            Assert.True(executed);
-        }
-
-        [Fact]
-        public void FirstFuncWithoutParametersThenActionIsExecuted()
-        {
             bool executed = false;
             Action nothing = () => executed = true;
-            var result = First
-                .Do(() => "input")
-                .Then(nothing)
-                .Finally()
-                .Execute();
+
+            var invocant = new Invocant<string>();
+            invocant.Then(m => m).Then(nothing);
+
+            invocant.Invoke("m");
 
             Assert.True(executed);
         }
 
         [Fact]
-        public void FirstFuncWithoutParametersThenResultIsTransient()
+        public void ExtendOnFuncItself()
         {
-            Action nothing = () => { };
-            var result = First
-                .Do(() => "input")
-                .Then(nothing)
-                .Finally()
-                .Execute();
+            Func<int> invocant = () => 5;
+            var next = invocant.Then(i => i * 2);
 
-
-            Assert.Equal("input", result);
+            var result = next();
+            Assert.Equal(10, result);
         }
 
         [Fact]
-        public void FirstFuncWithoutParametersThenActionWithParameter()
+        public void ActionToFunc()
         {
-            string execute = "I received some ";
-            Action<string> nothing = m => execute += m;
-            var result = First
-                .Do(() => "input")
-                .Then(nothing)
-                .Finally()
-                .Execute();
+            var executed = false;
+            Action action = () => executed = true;
+            Func<int, int> func = action.ToFunc<int>();
 
+            func(3);
+            Assert.True(executed);
+        }
 
-            Assert.Equal("I received some input", execute);
+        [Fact]
+        public void ActionToFuncInputIsOutput()
+        {
+            Action action = () => { };
+            Func<int, int> func = action.ToFunc<int>();
+
+            var result = func(3);
+            Assert.Equal(3, result);
+        }
+
+        [Fact]
+        public void ActionWithParameterToFunc()
+        {
+            var result = 0;
+            Action<int> action = input =>  result = input;
+            Func<int, int> func = action.ToFunc<int>();
+
+            func(3);
+            Assert.Equal(3, result);
         }
     }
+
+    public static class LambdaExtensions
+    {
+        public static Func<TNext> Then<T, TNext>(this Func<T> first, Func<T, TNext> then)
+        {
+            return new Func<TNext>(() => then(first()));
+        }
+
+       
+    }
+
 }
