@@ -9,6 +9,7 @@ namespace FirstThen
         IDo<TNext> Then<TNext>(Func<TResult, TNext> transform);
         IDo<TResult> Then(Action action);
         IFinally<TResult> Finally();
+        IDo<TResult> Then(Action<TResult> action);
     }
 
     public interface IDo<TInput, out TResult> : IExecute<TInput>

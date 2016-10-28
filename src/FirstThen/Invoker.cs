@@ -87,6 +87,11 @@ namespace FirstThen
             }
         }
 
+        public IDo<TResult> Then(Action<TResult> action)
+        {
+            return Then(input => { action(input); return input; });
+        }
+
         public IDo<TResult> Then(Action action)
         {
             return Then(input => { action(); return input; });

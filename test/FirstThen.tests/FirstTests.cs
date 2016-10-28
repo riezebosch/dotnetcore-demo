@@ -150,5 +150,20 @@ namespace FirstThen.tests
 
             Assert.Equal("input", result);
         }
+
+        [Fact]
+        public void FirstFuncWithoutParametersThenActionWithParameter()
+        {
+            string execute = "I received some ";
+            Action<string> nothing = m => execute += m;
+            var result = First
+                .Do(() => "input")
+                .Then(nothing)
+                .Finally()
+                .Execute();
+
+
+            Assert.Equal("I received some input", execute);
+        }
     }
 }
