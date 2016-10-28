@@ -1,6 +1,6 @@
 ﻿namespace FirstThen
 {
-    public interface IInvoke<TInput>
+    public interface IInvoke<in TInput>
     {
         void Invoke(TInput input);
     }

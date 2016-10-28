@@ -41,6 +41,7 @@ namespace rabbitmq_demo_service
             container
                 .Resolve<Receiver>()
                 .Subscribe<CreatePerson>()
+                .Invoked()
                 .Then(container.Resolve<PeopleService>().Execute)
                 .Then(m => Received?.Invoke(m));
 

@@ -29,6 +29,7 @@ namespace rabbitmq_demo.tests
                 // Act
                 listener
                     .Subscribe<Person>()
+                    .Invoked()
                     .Then(p => output = p)
                     .Then(() => wait.Set());
 
@@ -51,6 +52,7 @@ namespace rabbitmq_demo.tests
                 var people = new List<Person>();
                 listener
                     .Subscribe<Person>()
+                    .Invoked()
                     .Then(people.Add)
                     .Then(() => wait.Signal());
 
@@ -78,10 +80,12 @@ namespace rabbitmq_demo.tests
                 var people = new List<Person>();
                 listener1
                     .Subscribe<Person>()
+                    .Invoked()
                     .Then(people.Add)
                     .Then(() => wait.Signal());
                 listener2
                     .Subscribe<Person>()
+                    .Invoked()
                     .Then(people.Add)
                     .Then(() => wait.Signal());
 
@@ -102,8 +106,8 @@ namespace rabbitmq_demo.tests
             using (var wait = new CountdownEvent(2))
             using (var listener = new Receiver())
             {
-                listener.Subscribe<Person>().Then(() => wait.Signal());
-                listener.Subscribe<string>().Then(() => wait.Signal());
+                listener.Subscribe<Person>().Invoked().Then(() => wait.Signal());
+                listener.Subscribe<string>().Invoked().Then(() => wait.Signal());
 
                 using (var sender = new Sender())
                 {

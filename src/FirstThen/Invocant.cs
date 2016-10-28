@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace FirstThen
 {
-    public class Invocant<TInput> : IInvoke<TInput>, IDo<TInput>
+    public class Invocant<TInput> : IInvoke<TInput>, IInvocant<TInput>
     {
         private IInvoke<TInput> _last;
 
@@ -13,19 +13,9 @@ namespace FirstThen
             _last?.Invoke(input);
         }
 
-        public IDo<TResult> Then<TResult>(Func<TInput, TResult> transform)
+        public IDo<TInput> Invoked()
         {
-            return new Transformation<TResult>(transform, this);
-        }
-
-        public IDo<TInput> Then(Action<TInput> action)
-        {
-            return Then(action.ToFunc());
-        }
-
-        public IDo<TInput> Then(Action action)
-        {
-            return Then(action.ToFunc<TInput>());
+            return new Transformation<TInput>(input => input, this);
         }
 
         class Transformation<TResult> : IDo<TResult>, IInvoke<TInput>
@@ -37,11 +27,9 @@ namespace FirstThen
             {
                 _transform = transform;
 
-                // Store origin so we can pass it on to the next one when the chain of invocations is extended.
-                _origin = origin;
-
-                // Make this the last invocant on the original creator so that all intermediate methods are included when invoked.
-                _origin._last = this;
+                // Store origin so we can pass it on to the next transformation when the chain of invocations is extended.
+                // Make this one the last invocant on the original creator so that all intermediate methods are included when invoked.
+                (_origin = origin)._last = this;
             }
 
             public IDo<TResult> Then(Action action)
