@@ -28,17 +28,20 @@ namespace rabbitmq_demo.tests
 
                 // Act
                 listener
-                    .Subscribe<Person>()
-                    .Invoked()
-                    .Then(p => output = p)
-                    .Then(() => wait.Set());
+                    .Subscribe<Person>(p =>
+                    {
+                        output = p;
+                        wait.Set();
+                    });
 
                 using (var sender = new Sender())
                 {
                     sender.Publish(input);
                 }
 
+                // Assert
                 Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
+                Assert.False(ReferenceEquals(input, output));
                 Assert.Equal(input, output, new PersonComparer());
             }
         }
@@ -51,10 +54,11 @@ namespace rabbitmq_demo.tests
             {
                 var people = new List<Person>();
                 listener
-                    .Subscribe<Person>()
-                    .Invoked()
-                    .Then(people.Add)
-                    .Then(() => wait.Signal());
+                    .Subscribe<Person>(p =>
+                    {
+                        people.Add(p);
+                        wait.Signal();
+                    });
 
                 var first = new Person { FirstName = "first" };
                 var second = new Person { FirstName = "second" };
@@ -79,15 +83,17 @@ namespace rabbitmq_demo.tests
             {
                 var people = new List<Person>();
                 listener1
-                    .Subscribe<Person>()
-                    .Invoked()
-                    .Then(people.Add)
-                    .Then(() => wait.Signal());
+                    .Subscribe<Person>(p =>
+                    {
+                        people.Add(p);
+                        wait.Signal();
+                    });
                 listener2
-                    .Subscribe<Person>()
-                    .Invoked()
-                    .Then(people.Add)
-                    .Then(() => wait.Signal());
+                    .Subscribe<Person>(p =>
+                    {
+                        people.Add(p);
+                        wait.Signal();
+                    });
 
                 var messsage = new Person { FirstName = "first" };
                 using (var sender = new Sender())
@@ -106,8 +112,8 @@ namespace rabbitmq_demo.tests
             using (var wait = new CountdownEvent(2))
             using (var listener = new Receiver())
             {
-                listener.Subscribe<Person>().Invoked().Then(() => wait.Signal());
-                listener.Subscribe<string>().Invoked().Then(() => wait.Signal());
+                listener.Subscribe<Person>(p => wait.Signal());
+                listener.Subscribe<string>(p => wait.Signal());
 
                 using (var sender = new Sender())
                 {

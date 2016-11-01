@@ -3,8 +3,7 @@
 
   "dependencies": {
     "RabbitMQ.Client": "4.1.1-rc1",
-    "Newtonsoft.Json": "9.0.1",
-    "FirstThen": "1.0.0-*"
+    "Newtonsoft.Json": "9.0.1"
   },
 
   "frameworks": {

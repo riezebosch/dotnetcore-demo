@@ -40,10 +40,11 @@ namespace rabbitmq_demo_service
             var container = builder.Build();
             container
                 .Resolve<Receiver>()
-                .Subscribe<CreatePerson>()
-                .Invoked()
-                .Then(container.Resolve<PeopleService>().Execute)
-                .Then(m => Received?.Invoke(m));
+                .Subscribe<CreatePerson>(p =>
+                {
+                    container.Resolve<PeopleService>().Execute(p);
+                    Received?.Invoke(p);
+                });
 
             return container;
         }

@@ -1,5 +1,4 @@
-﻿using FirstThen;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -33,7 +32,7 @@ namespace rabbitmq_demo
             channel.Dispose();
         }
 
-        public IInvocant<T> Subscribe<T>()
+        public void Subscribe<T>(Action<T> action)
         {
             var routingkey = typeof(T).FullName;
             channel.ExchangeDeclare(exchange: _exchange, type: ExchangeType.Fanout);
@@ -43,15 +42,12 @@ namespace rabbitmq_demo
                               exchange: _exchange,
                               routingKey: routingkey);
 
-            var invocant = new Invocant<T>();
             var consumer = new EventingBasicConsumer(channel);
-            consumer.Received += (model, ea) => invocant.Invoke(Convert<T>(ea.Body));
+            consumer.Received += (model, ea) => action(Convert<T>(ea.Body));
 
             channel.BasicConsume(queue: queueName,
                              noAck: true,
                              consumer: consumer);
-
-            return invocant;
         }
 
         private static T Convert<T>(byte[] body)
