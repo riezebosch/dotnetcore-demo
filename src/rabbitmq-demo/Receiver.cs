@@ -24,6 +24,7 @@ namespace rabbitmq_demo
             IConnectionFactory factory = new ConnectionFactory() { HostName = _hostname };
             connection = factory.CreateConnection();
             channel = connection.CreateModel();
+            channel.ExchangeDeclare(exchange: _exchange, type: ExchangeType.Topic);
         }
 
         public void Dispose()
@@ -34,8 +35,7 @@ namespace rabbitmq_demo
 
         public void Subscribe<T>(Action<T> action)
         {
-            var routingkey = typeof(T).FullName;
-            channel.ExchangeDeclare(exchange: _exchange, type: ExchangeType.Fanout);
+            var routingkey = typeof(T).Name;
 
             var queueName = channel.QueueDeclare().QueueName;
             channel.QueueBind(queue: queueName,

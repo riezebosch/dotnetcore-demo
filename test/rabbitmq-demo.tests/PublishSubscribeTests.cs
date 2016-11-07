@@ -124,5 +124,64 @@ namespace rabbitmq_demo.tests
                 Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
             }
         }
+
+        [Fact]
+        public void SendAndReceiveShouldNotDependOnClrTypes()
+        {
+            // Arrange
+            var input = new ef_demo.Person { FirstName = "Test", LastName = "Man" };
+
+            using (var wait = new ManualResetEvent(false))
+            using (var listener = new Receiver())
+            {
+                rabbitmq_demo.tests.Person output = null;
+
+                // Act
+                listener
+                    .Subscribe<rabbitmq_demo.tests.Person>(p =>
+                    {
+                        output = p;
+                        wait.Set();
+                    });
+
+                using (var sender = new Sender())
+                {
+                    sender.Publish(input);
+                }
+
+                // Assert
+                Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
+                Assert.Equal(input.FirstName, output.FirstName);
+            }
+        }
+
+        [Fact]
+        public void SendAndReceiveShouldDependOnClassName()
+        {
+            // Arrange
+            var input = new Person { FirstName = "Test", LastName = "Man" };
+
+            using (var wait = new ManualResetEvent(false))
+            using (var listener = new Receiver())
+            {
+                SomethingUnrelated output = null;
+
+                // Act
+                listener
+                    .Subscribe<SomethingUnrelated>(p =>
+                    {
+                        output = p;
+                        wait.Set();
+                    });
+
+                using (var sender = new Sender())
+                {
+                    sender.Publish(input);
+                }
+
+                // Assert
+                Assert.False(wait.WaitOne(TimeSpan.FromSeconds(1)));
+            }
+        }
     }
 }

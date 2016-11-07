@@ -24,12 +24,12 @@ namespace rabbitmq_demo
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
 
-            _channel.ExchangeDeclare(exchange: _exchange, type: ExchangeType.Fanout);
+            _channel.ExchangeDeclare(exchange: _exchange, type: ExchangeType.Topic);
         }
 
         public void Publish<T>(T input)
         {
-            var routingKey = typeof(T).FullName;
+            var routingKey = typeof(T).Name;
 
             var message = JsonConvert.SerializeObject(input);
             var body = Encoding.UTF8.GetBytes(message);
