@@ -9,6 +9,10 @@ namespace rabbitmq_demo_service
     {
         public static void Main(string[] args)
         {
+            var services = new Services();
+            services.Received += Console.WriteLine;
+
+            Console.ReadKey();
         }
     }
 }

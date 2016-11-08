@@ -1,6 +1,7 @@
 ﻿using ef_demo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using rabbitmq_demo;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -44,6 +45,22 @@ namespace rabbitmq_demo_service.tests
 
                 Assert.NotNull(entry);
                 Assert.Equal(EntityState.Unchanged, entry.State);
+            }
+        }
+
+        [Fact]
+        public void WhenExecutingCreatePersonCommandPersonCreatedEventIsRaised()
+        {
+            using (var context = new DemoContext(CreateOptions()))
+            using (var service = new PeopleService(context))
+            using (var receiver = new Receiver())
+            {
+                var result = receiver.WaitForResult<PersonCreated>(
+                    () => service.Execute(new CreatePerson { FirstName = "Test", LastName = "Man" }));
+
+                Assert.Equal("Test", result.FirstName);
+                Assert.Equal("Man", result.LastName);
+                Assert.NotEqual(0, result.Id);
             }
         }
     }

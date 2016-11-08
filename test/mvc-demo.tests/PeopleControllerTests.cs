@@ -23,12 +23,15 @@ namespace mvc_demo.tests
         [Fact]
         public void AddPersonPublishesPersonCreatedCommand()
         {
-            var controller = new PeopleController();
-            var command = WaitForResult<CreatePerson>(() => controller.Create(new CreatePerson { FirstName = "first", LastName = "last" }));
+            using (var receiver = new Receiver())
+            {
+                var controller = new PeopleController();
+                var command = receiver.WaitForResult<CreatePerson>(() => controller.Create(new CreatePerson { FirstName = "first", LastName = "last" }));
 
-            Assert.NotNull(command);
-            Assert.Equal("first", command.FirstName);
-            Assert.Equal("last", command.LastName);
+                Assert.NotNull(command);
+                Assert.Equal("first", command.FirstName);
+                Assert.Equal("last", command.LastName);
+            }
         }
 
         [Fact]
@@ -56,8 +59,9 @@ namespace mvc_demo.tests
         {
             using (var server = StartTestServer())
             using (var client = server.CreateClient())
+            using (var receiver = new Receiver())
             {
-                var command = WaitForResult<CreatePerson>(() =>
+                var command = receiver.WaitForResult<CreatePerson>(() =>
                 {
                     var result = client.PostAsync("People/Create", new StringContent(JsonConvert.SerializeObject(new { FirstName = "first", LastName = "last" }), Encoding.UTF8, "application/json")).Result;
                     Assert.Equal(HttpStatusCode.Redirect, result.StatusCode);
@@ -77,24 +81,6 @@ namespace mvc_demo.tests
                             .ConfigureServices(services =>
                             {
                             }));
-        }
-
-        private static T WaitForResult<T>(Action publish)
-        {
-            T result = default(T);
-            using (var receiver = new Receiver())
-            using (var wait = new ManualResetEvent(false))
-            {
-                receiver.Subscribe<T>(p => { result = p; wait.Set(); });
-                publish();
-
-                if (!wait.WaitOne(TimeSpan.FromSeconds(5)))
-                {
-                    throw new TimeoutException();
-                }
-            }
-
-            return result;
         }
     }
 }

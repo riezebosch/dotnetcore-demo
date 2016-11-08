@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace rabbitmq_demo
 {
@@ -52,6 +53,28 @@ namespace rabbitmq_demo
             channel.BasicConsume(queue: queueName,
                              noAck: true,
                              consumer: consumer);
+        }
+
+        public T WaitForResult<T>(Action publish, TimeSpan timeout)
+        {
+            T result = default(T);
+            using (var wait = new ManualResetEvent(false))
+            {
+                Subscribe<T>(p => { result = p; wait.Set(); });
+                publish();
+
+                if (!wait.WaitOne(timeout))
+                {
+                    throw new TimeoutException();
+                }
+            }
+
+            return result;
+        }
+
+        public T WaitForResult<T>(Action publish)
+        {
+            return WaitForResult<T>(publish, TimeSpan.FromSeconds(5));
         }
 
         private static T Convert<T>(byte[] body)

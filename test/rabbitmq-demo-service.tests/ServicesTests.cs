@@ -22,6 +22,8 @@ namespace rabbitmq_demo_service.tests
                 Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
             }
         }
+
+
     }
 }
 
