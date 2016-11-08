@@ -7,7 +7,7 @@ using System.Text;
 
 namespace rabbitmq_demo
 {
-    public class Sender : IDisposable
+    public class Sender : ISender, IDisposable
     {
         private readonly string _exchange;
 

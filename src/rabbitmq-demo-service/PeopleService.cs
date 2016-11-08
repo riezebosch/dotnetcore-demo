@@ -6,11 +6,13 @@ namespace rabbitmq_demo_service
 {
     public class PeopleService : IDisposable
     {
+        private ISender _sender;
         DemoContext _context;
 
-        public PeopleService(DemoContext context)
+        public PeopleService(DemoContext context, ISender sender)
         {
             _context = context;
+            _sender = sender;
         }
 
         public void Dispose()
@@ -24,15 +26,12 @@ namespace rabbitmq_demo_service
             _context.People.Add(person);
             _context.SaveChanges();
 
-            using (var sender = new Sender())
+            _sender.Publish(new PersonCreated
             {
-                sender.Publish(new PersonCreated
-                {
-                    Id = person.Id,
-                    FirstName = person.FirstName,
-                    LastName = person.LastName
-                });
-            }
+                Id = person.Id,
+                FirstName = person.FirstName,
+                LastName = person.LastName
+            });
         }
     }
 }

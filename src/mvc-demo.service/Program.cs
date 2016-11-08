@@ -11,18 +11,7 @@ namespace mvc_demo.service
     {
         public static void Main(string[] args)
         {
-            var connection = new ConnectionFactory
-            {
-                HostName = "localhost",
-                UserName = "guest",
-                Password = "guest"
-            };
 
-            using (var receiver = new Receiver(connection, "rabbitmq-services"))
-            {
-                receiver.Subscribe<PersonCreated>(p => { });
-                Console.ReadKey();
-            }
         }
     }
 }

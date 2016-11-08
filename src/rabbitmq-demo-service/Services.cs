@@ -35,6 +35,7 @@ namespace rabbitmq_demo_service
             builder.RegisterType<DemoContext>();
             builder.RegisterType<PeopleService>();
             builder.RegisterType<Receiver>();
+            builder.RegisterType<Sender>().As<ISender>();
             builder.RegisterInstance(CreateOptions());
 
             var container = builder.Build();

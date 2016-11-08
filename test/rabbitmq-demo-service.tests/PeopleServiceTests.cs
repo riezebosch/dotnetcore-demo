@@ -1,6 +1,7 @@
 ﻿using ef_demo;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Moq;
 using rabbitmq_demo;
 using System;
 using System.Collections.Generic;
@@ -38,7 +39,7 @@ namespace rabbitmq_demo_service.tests
         public void GivenPeopleServiceWhenCreatePersonCommandReceivedThenPersonPersisted()
         {
             using (var context = new DemoContext(CreateOptions()))
-            using (var service = new PeopleService(context))
+            using (var service = new PeopleService(context, new Mock<ISender>().Object))
             {
                 service.Execute(new CreatePerson { FirstName = "Test", LastName = "Man" });
                 var entry = context.ChangeTracker.Entries<Person>().FirstOrDefault();
@@ -51,17 +52,16 @@ namespace rabbitmq_demo_service.tests
         [Fact]
         public void WhenExecutingCreatePersonCommandPersonCreatedEventIsRaised()
         {
-            using (var context = new DemoContext(CreateOptions()))
-            using (var service = new PeopleService(context))
-            using (var receiver = new Receiver())
-            {
-                var result = receiver.WaitForResult<PersonCreated>(
-                    () => service.Execute(new CreatePerson { FirstName = "Test", LastName = "Man" }));
+            var receiver = new Mock<ISender>();
+            receiver.Setup(m => m.Publish(It.IsAny<PersonCreated>())).Verifiable();
 
-                Assert.Equal("Test", result.FirstName);
-                Assert.Equal("Man", result.LastName);
-                Assert.NotEqual(0, result.Id);
+            using (var context = new DemoContext(CreateOptions()))
+            using (var service = new PeopleService(context, receiver.Object))
+            {
+                service.Execute(new CreatePerson { FirstName = "Test", LastName = "Man" });
             }
+
+            receiver.Verify();
         }
     }
 }

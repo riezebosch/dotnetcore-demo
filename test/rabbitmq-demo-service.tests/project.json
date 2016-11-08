@@ -9,7 +9,8 @@
     "dotnet-test-xunit": "2.2.0-preview2-build1029",
     "ef-demo": "1.0.0-*",
     "Microsoft.EntityFrameworkCore.InMemory": "1.0.1",
-    "Autofac": "4.1.1"
+    "Autofac": "4.1.1",
+    "Moq": "4.6.38-alpha"
   },
 
   "frameworks": {
