@@ -8,11 +8,11 @@ namespace Controllers
     public class PeopleController : Controller
     {
         [HttpPost]
-        public ActionResult Create(string first, string last)
+        public ActionResult Create([FromBody]CreatePerson data)
         {
             using (var sender = new Sender())
             {
-                sender.Publish(new CreatePerson { FirstName = first, LastName = last });
+                sender.Publish(data);
             }
             return RedirectToAction("Index");
         }
