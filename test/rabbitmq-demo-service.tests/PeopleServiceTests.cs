@@ -39,8 +39,8 @@ namespace rabbitmq_demo_service.tests
         public void GivenPeopleServiceWhenCreatePersonCommandReceivedThenPersonPersisted()
         {
             using (var context = new DemoContext(CreateOptions()))
-            using (var service = new PeopleService(context, new Mock<ISender>().Object))
             {
+                var service = new PeopleService(context, new Mock<ISender>().Object);
                 service.Execute(new CreatePerson { FirstName = "Test", LastName = "Man" });
                 var entry = context.ChangeTracker.Entries<Person>().FirstOrDefault();
 
@@ -61,8 +61,8 @@ namespace rabbitmq_demo_service.tests
                 .Verifiable();
 
             using (var context = new DemoContext(CreateOptions()))
-            using (var service = new PeopleService(context, receiver.Object))
             {
+                var service = new PeopleService(context, receiver.Object);
                 service.Execute(new CreatePerson { FirstName = "Test", LastName = "Man" });
             }
 

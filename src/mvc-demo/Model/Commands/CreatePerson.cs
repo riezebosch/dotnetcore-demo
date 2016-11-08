@@ -4,7 +4,7 @@ namespace Model.Commands
 {
     public class CreatePerson
     {
-        public IEnumerable<char> FirstName { get; set; }
-        public IEnumerable<char> LastName { get; set; }
+        public string FirstName { get; set; }
+        public string LastName { get; set; }
     }
 }

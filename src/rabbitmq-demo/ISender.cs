@@ -1,4 +1,7 @@
-﻿public interface ISender
+﻿namespace rabbitmq_demo
 {
-    void Publish<T>(T personCreated);
+    public interface ISender
+    {
+        void Publish<T>(T personCreated);
+    }
 }

@@ -1,4 +1,6 @@
-﻿using RabbitMQ.Client;
+﻿using Microsoft.EntityFrameworkCore;
+using mvc_demo.database;
+using RabbitMQ.Client;
 using rabbitmq_demo;
 using System;
 using System.Collections.Generic;
@@ -11,7 +13,16 @@ namespace mvc_demo.service
     {
         public static void Main(string[] args)
         {
+            using (var context = new FrontEndContext(
+                new DbContextOptionsBuilder<FrontEndContext>()
+                .UseSqlServer(@"Server=.\SQLEXPRESS;Database=mvc-demo;Trusted_Connection=true").Options))
+            using (var receiver = new Receiver(new ConnectionFactory { HostName = "curistm03", UserName = "manuel", Password = "manuel" }, "mvc-demo"))
+            {
+                context.Database.Migrate();
+                var service = new FrontEndService(context, receiver);
 
+                Console.ReadKey();
+            }
         }
     }
 }

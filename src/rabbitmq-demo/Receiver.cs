@@ -9,9 +9,8 @@ using System.Threading;
 
 namespace rabbitmq_demo
 {
-    public class Receiver : IDisposable
+    public class Receiver : IReceiver, IDisposable
     {
-        private readonly string hostname;
         private readonly string _exchange;
 
         IConnection connection;
