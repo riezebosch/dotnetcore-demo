@@ -20,7 +20,6 @@ namespace rabbitmq_demo.tests
         {
             // Arrange
             var input = new Person { FirstName = "Test", LastName = "Man" };
-
             using (var wait = new ManualResetEvent(false))
             using (var listener = new Receiver())
             {
@@ -43,6 +42,33 @@ namespace rabbitmq_demo.tests
                 Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
                 Assert.False(ReferenceEquals(input, output));
                 Assert.Equal(input, output, new PersonComparer());
+            }
+        }
+
+        [Fact]
+        public void ConnectWithCredentials()
+        {
+            // Arrange
+            var input = new Person { FirstName = "Test", LastName = "Man" };
+            var connection = new ConnectionFactory
+            {
+                HostName = "localhost",
+                UserName = "guest",
+                Password = "guest"
+            };
+
+            using (var wait = new ManualResetEvent(false))
+            using (var listener = new Receiver(connection, "demo"))
+            {
+                // Act
+                listener.Subscribe<Person>(p => wait.Set());
+                using (var sender = new Sender(connection, "demo"))
+                {
+                    sender.Publish(input);
+                }
+
+                // Assert
+                Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
             }
         }
 

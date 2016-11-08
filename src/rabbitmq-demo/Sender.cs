@@ -9,18 +9,21 @@ namespace rabbitmq_demo
 {
     public class Sender : IDisposable
     {
-        private readonly string _hostname;
         private readonly string _exchange;
 
         IConnection _connection;
         IModel _channel;
 
-        public Sender(string hostname = "localhost", string exchange = "demo")
+        public Sender(string exchange = "demo")
+            : this(new ConnectionFactory { HostName = "localhost" },
+                  exchange)
         {
-            _hostname = hostname;
+        }
+
+        public Sender(IConnectionFactory factory, string exchange)
+        {
             _exchange = exchange;
 
-            var factory = new ConnectionFactory() { HostName = _hostname };
             _connection = factory.CreateConnection();
             _channel = _connection.CreateModel();
 

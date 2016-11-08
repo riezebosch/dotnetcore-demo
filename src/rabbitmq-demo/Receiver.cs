@@ -10,18 +10,22 @@ namespace rabbitmq_demo
 {
     public class Receiver : IDisposable
     {
-        private readonly string _hostname;
+        private readonly string hostname;
         private readonly string _exchange;
 
         IConnection connection;
         IModel channel;
 
-        public Receiver(string hostname = "localhost", string exchange = "demo")
+        public Receiver(string exchange = "demo")
+            : this(new ConnectionFactory() { HostName = "localhost" },
+                  exchange)
         {
-            _hostname = hostname;
+        }
+
+        public Receiver(IConnectionFactory factory, string exchange)
+        {
             _exchange = exchange;
 
-            IConnectionFactory factory = new ConnectionFactory() { HostName = _hostname };
             connection = factory.CreateConnection();
             channel = connection.CreateModel();
             channel.ExchangeDeclare(exchange: _exchange, type: ExchangeType.Topic);
