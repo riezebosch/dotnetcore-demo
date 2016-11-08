@@ -209,5 +209,26 @@ namespace rabbitmq_demo.tests
                 Assert.False(wait.WaitOne(TimeSpan.FromSeconds(1)));
             }
         }
+
+        [Fact]
+        public void WaitForResult()
+        {
+            using (var receiver = new Receiver())
+            using (var sender = new Sender())
+            {
+                var result = receiver.WaitForResult<int>(() => sender.Publish(3));
+                Assert.Equal(3, result);
+            }
+        }
+
+        [Fact]
+        public void WaitForResultTimeoutWhenNotReceiving()
+        {
+            using (var receiver = new Receiver())
+            using (var sender = new Sender())
+            {
+                Assert.Throws<TimeoutException>(() => receiver.WaitForResult<int>(() => { }, TimeSpan.FromSeconds(1)));
+            }
+        }
     }
 }
