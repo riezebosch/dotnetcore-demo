@@ -53,7 +53,12 @@ namespace rabbitmq_demo_service.tests
         public void WhenExecutingCreatePersonCommandPersonCreatedEventIsRaised()
         {
             var receiver = new Mock<ISender>();
-            receiver.Setup(m => m.Publish(It.IsAny<PersonCreated>())).Verifiable();
+            receiver.Setup(
+                m => m.Publish(It.Is<PersonCreated>(a =>
+                    a.Id != 0
+                    && a.FirstName == "Test"
+                    && a.LastName == "Man")))
+                .Verifiable();
 
             using (var context = new DemoContext(CreateOptions()))
             using (var service = new PeopleService(context, receiver.Object))
