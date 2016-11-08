@@ -4,7 +4,7 @@ using System;
 
 namespace rabbitmq_demo_service
 {
-    public class PeopleService : IDisposable
+    public class PeopleService 
     {
         private ISender _sender;
         DemoContext _context;
@@ -13,11 +13,6 @@ namespace rabbitmq_demo_service
         {
             _context = context;
             _sender = sender;
-        }
-
-        public void Dispose()
-        {
-            _context.Dispose();
         }
 
         public void Execute(CreatePerson command)
