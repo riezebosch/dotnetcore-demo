@@ -1,4 +1,5 @@
 ﻿using ef_demo;
+using Moq;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
@@ -6,6 +7,7 @@ using rabbitmq_demo.tests;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,18 +22,20 @@ namespace rabbitmq_demo.tests
         {
             // Arrange
             var input = new Person { FirstName = "Test", LastName = "Man" };
+
             using (var wait = new ManualResetEvent(false))
             using (var listener = new Receiver())
             {
-                Person output = null;
-
+                var mock = new Mock<IReceive<Person>>();
+                mock
+                    .Setup(m => m.Execute(
+                        It.Is<Person>(p => p.FirstName == "Test" && p.LastName == "Man")))
+                    .Callback(() => wait.Set())
+                    .Verifiable();
+                
                 // Act
                 listener
-                    .Subscribe<Person>(p =>
-                    {
-                        output = p;
-                        wait.Set();
-                    });
+                    .Subscribe<Person>(mock.Object);
 
                 using (var sender = new Sender())
                 {
@@ -40,8 +44,7 @@ namespace rabbitmq_demo.tests
 
                 // Assert
                 Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
-                Assert.False(ReferenceEquals(input, output));
-                Assert.Equal(input, output, new PersonComparer());
+                mock.Verify();
             }
         }
 
@@ -78,25 +81,29 @@ namespace rabbitmq_demo.tests
             using (var wait = new CountdownEvent(2))
             using (var listener = new Receiver())
             {
-                var people = new List<Person>();
-                listener
-                    .Subscribe<Person>(p =>
-                    {
-                        people.Add(p);
-                        wait.Signal();
-                    });
+                var mock = new Mock<IReceive<Person>>();
+                mock
+                    .Setup(m => m.Execute(
+                        It.Is<Person>(p => p.FirstName == "first")))
+                    .Callback(() => wait.Signal())
+                    .Verifiable();
 
-                var first = new Person { FirstName = "first" };
-                var second = new Person { FirstName = "second" };
+                mock
+                    .Setup(m => m.Execute(
+                        It.Is<Person>(p => p.FirstName == "second")))
+                    .Callback(() => wait.Signal())
+                    .Verifiable();
+
+                listener.Subscribe(mock.Object);
 
                 using (var sender = new Sender())
                 {
-                    sender.Publish(first);
-                    sender.Publish(second);
+                    sender.Publish(new Person { FirstName = "first" });
+                    sender.Publish(new Person { FirstName = "second" });
                 }
 
                 Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
-                Assert.Equal(new[] { first, second }, people, new PersonComparer());
+                mock.Verify();
             }
         }
 
@@ -107,28 +114,21 @@ namespace rabbitmq_demo.tests
             using (var listener1 = new Receiver())
             using (var listener2 = new Receiver())
             {
-                var people = new List<Person>();
-                listener1
-                    .Subscribe<Person>(p =>
-                    {
-                        people.Add(p);
-                        wait.Signal();
-                    });
-                listener2
-                    .Subscribe<Person>(p =>
-                    {
-                        people.Add(p);
-                        wait.Signal();
-                    });
+                var mock = new Mock<IReceive<Person>>();
+                mock
+                    .Setup(m => m.Execute(It.IsAny<Person>()))
+                    .Callback(() => wait.Signal());
 
-                var messsage = new Person { FirstName = "first" };
+                listener1.Subscribe(mock.Object);
+                listener2.Subscribe(mock.Object);
+
                 using (var sender = new Sender())
                 {
-                    sender.Publish(messsage);
+                    sender.Publish(new Person { FirstName = "first" });
                 }
 
                 Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
-                Assert.Equal(new[] { messsage, messsage }, people, new PersonComparer());
+                mock.Verify(m => m.Execute(It.IsAny<Person>()), Times.Exactly(2));
             }
         }
 
@@ -138,8 +138,20 @@ namespace rabbitmq_demo.tests
             using (var wait = new CountdownEvent(2))
             using (var listener = new Receiver())
             {
-                listener.Subscribe<Person>(p => wait.Signal());
-                listener.Subscribe<string>(p => wait.Signal());
+                var mock1 = new Mock<IReceive<Person>>();
+                mock1
+                    .Setup(m => m.Execute(It.IsAny<Person>()))
+                    .Callback(() => wait.Signal())
+                    .Verifiable();
+
+                var mock2 = new Mock<IReceive<string>>();
+                mock2
+                    .Setup(m => m.Execute(It.IsAny<string>()))
+                    .Callback(() => wait.Signal())
+                    .Verifiable();
+
+                listener.Subscribe(mock1.Object);
+                listener.Subscribe(mock2.Object);
 
                 using (var sender = new Sender())
                 {
@@ -148,6 +160,8 @@ namespace rabbitmq_demo.tests
                 }
 
                 Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
+                mock1.Verify();
+                mock2.Verify();
             }
         }
 
@@ -160,16 +174,17 @@ namespace rabbitmq_demo.tests
             using (var wait = new ManualResetEvent(false))
             using (var listener = new Receiver())
             {
-                rabbitmq_demo.tests.Person output = null;
+                var mock = new Mock<IReceive<Person>>();
+                mock
+                    .Setup(m => m.Execute(
+                        It.Is<rabbitmq_demo.tests.Person>(p => 
+                            p.FirstName == input.FirstName 
+                            && p.LastName == input.LastName)))
+                    .Callback(() => wait.Set());
+
+                listener.Subscribe(mock.Object);
 
                 // Act
-                listener
-                    .Subscribe<rabbitmq_demo.tests.Person>(p =>
-                    {
-                        output = p;
-                        wait.Set();
-                    });
-
                 using (var sender = new Sender())
                 {
                     sender.Publish(input);
@@ -177,7 +192,7 @@ namespace rabbitmq_demo.tests
 
                 // Assert
                 Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
-                Assert.Equal(input.FirstName, output.FirstName);
+                mock.Verify();
             }
         }
 
@@ -187,19 +202,14 @@ namespace rabbitmq_demo.tests
             // Arrange
             var input = new Person { FirstName = "Test", LastName = "Man" };
 
-            using (var wait = new ManualResetEvent(false))
             using (var listener = new Receiver())
+            using (var wait = new ManualResetEvent(false))
             {
-                SomethingUnrelated output = null;
+                var mock = new Mock<IReceive<SomethingUnrelated>>();
+                mock.Setup(m => m.Execute(It.IsAny<SomethingUnrelated>())).Callback(() => wait.Set());
+                listener.Subscribe(mock.Object);
 
                 // Act
-                listener
-                    .Subscribe<SomethingUnrelated>(p =>
-                    {
-                        output = p;
-                        wait.Set();
-                    });
-
                 using (var sender = new Sender())
                 {
                     sender.Publish(input);
@@ -207,27 +217,39 @@ namespace rabbitmq_demo.tests
 
                 // Assert
                 Assert.False(wait.WaitOne(TimeSpan.FromSeconds(1)));
+                mock.Verify(m => m.Execute(It.IsAny<SomethingUnrelated>()), Times.Never);
             }
         }
 
         [Fact]
-        public void WaitForResult()
+        public async Task WaitForResult()
         {
             using (var receiver = new Receiver())
             using (var sender = new Sender())
             {
-                var result = receiver.WaitForResult<int>(() => sender.Publish(3));
+                var task = new ReceiveTask<int>();
+                receiver.Subscribe(task);
+
+                sender.Publish(3);
+
+                var result = await task;
                 Assert.Equal(3, result);
             }
         }
 
-        [Fact]
-        public void WaitForResultTimeoutWhenNotReceiving()
+
+        class ReceiveTask<T> : IReceive<T>
         {
-            using (var receiver = new Receiver())
-            using (var sender = new Sender())
+            TaskCompletionSource<T> tcs = new TaskCompletionSource<T>();
+
+            public void Execute(T item)
             {
-                Assert.Throws<TimeoutException>(() => receiver.WaitForResult<int>(() => { }, TimeSpan.FromSeconds(1)));
+                tcs.SetResult(item);
+            }
+
+            public TaskAwaiter<T> GetAwaiter()
+            {
+                return tcs.Task.GetAwaiter();
             }
         }
     }

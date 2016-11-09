@@ -37,6 +37,7 @@ namespace rabbitmq_demo
             channel.Dispose();
         }
 
+        [Obsolete("Subscribe a class that implements the IReceive interface instead.")]
         public void Subscribe<T>(Action<T> action)
         {
             var routingkey = typeof(T).Name;
@@ -54,6 +55,24 @@ namespace rabbitmq_demo
                              consumer: consumer);
         }
 
+        public void Subscribe<T>(IReceive<T> receiver)
+        {
+            var routingkey = typeof(T).Name;
+
+            var queueName = channel.QueueDeclare().QueueName;
+            channel.QueueBind(queue: queueName,
+                              exchange: _exchange,
+                              routingKey: routingkey);
+
+            var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += (model, ea) => receiver.Execute(Convert<T>(ea.Body));
+
+            channel.BasicConsume(queue: queueName,
+                             noAck: true,
+                             consumer: consumer);
+        }
+
+        [Obsolete("Subscribe a ReceiverTask instead.")]
         public T WaitForResult<T>(Action publish, TimeSpan timeout)
         {
             T result = default(T);
@@ -71,6 +90,7 @@ namespace rabbitmq_demo
             return result;
         }
 
+        [Obsolete("Subscribe a ReceiverTask instead.")]
         public T WaitForResult<T>(Action publish)
         {
             return WaitForResult<T>(publish, TimeSpan.FromSeconds(5));
