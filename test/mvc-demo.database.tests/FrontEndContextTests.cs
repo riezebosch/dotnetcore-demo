@@ -11,6 +11,15 @@ namespace mvc_demo.database.tests
 {
     public class FrontEndContextTests
     {
+        public FrontEndContextTests()
+        {
+            using (var context = new FrontEndContext(
+                new DbContextOptionsBuilder<FrontEndContext>().UseSqlServer(@"Server=.\SQLEXPRESS;Database=mvc-demo.database.tests;Trusted_Connection=true").Options))
+            {
+                context.Database.Migrate();
+            }
+        }
+
         [Fact]
         public void StorePeople()
         {
@@ -18,7 +27,6 @@ namespace mvc_demo.database.tests
                 new DbContextOptionsBuilder<FrontEndContext>().UseSqlite(@"File=.\test.db").Options))
             {
                 context.People.Add(new Person { Id = 0, Name = "Test Man" });
-
             }
         }
 
@@ -27,10 +35,8 @@ namespace mvc_demo.database.tests
         {
             using (var context = new FrontEndContext(
                            new DbContextOptionsBuilder<FrontEndContext>().UseSqlServer(@"Server=.\SQLEXPRESS;Database=mvc-demo.database.tests;Trusted_Connection=true").Options))
+            using (context.Database.BeginTransaction())
             {
-                context.Database.EnsureDeleted();
-                context.Database.EnsureCreated();
-
                 var person = new Person { Id = 15, Name = "Test Man" };
                 context.People.Add(person);
                 context.SaveChanges();
@@ -49,11 +55,6 @@ namespace mvc_demo.database.tests
                 var options = new DbContextOptionsBuilder<FrontEndContext>()
                     .UseSqlServer(connection)
                     .Options;
-
-                using (var context = new FrontEndContext(options))
-                {
-                    context.Database.Migrate();
-                }
 
                 using (var tx = connection.BeginTransaction())
                 {
