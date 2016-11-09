@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using System;
 using System.Collections.Generic;
+using System.Data.SqlClient;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -18,6 +20,79 @@ namespace mvc_demo.database.tests
                 context.People.Add(new Person { Id = 0, Name = "Test Man" });
 
             }
+        }
+
+        [Fact]
+        public void IdShouldBeExplicitlySpecifiedWhenAddingNewPerson()
+        {
+            using (var context = new FrontEndContext(
+                           new DbContextOptionsBuilder<FrontEndContext>().UseSqlServer(@"Server=.\SQLEXPRESS;Database=mvc-demo.database.tests;Trusted_Connection=true").Options))
+            {
+                context.Database.EnsureDeleted();
+                context.Database.EnsureCreated();
+
+                var person = new Person { Id = 15, Name = "Test Man" };
+                context.People.Add(person);
+                context.SaveChanges();
+
+                Assert.Equal(15, person.Id);
+            }
+        }
+
+        [Fact]
+        public void IdShouldBeUnique()
+        {
+            using (var connection = new SqlConnection(@"Server=.\SQLEXPRESS;Database=mvc-demo.database.tests;Trusted_Connection=true"))
+            {
+                connection.Open();
+
+                var options = new DbContextOptionsBuilder<FrontEndContext>()
+                    .UseSqlServer(connection)
+                    .Options;
+
+                using (var context = new FrontEndContext(options))
+                {
+                    context.Database.Migrate();
+                }
+
+                using (var tx = connection.BeginTransaction())
+                {
+                    using (var context = new FrontEndContext(options))
+                    {
+                        context.Database.UseTransaction(tx);
+
+                        var person = new Person { Id = 15, Name = "Test Man" };
+                        context.People.Add(person);
+                        context.SaveChanges();
+                    }
+
+                    using (var context = new FrontEndContext(options))
+                    {
+                        context.Database.UseTransaction(tx);
+
+                        var person = new Person { Id = 15, Name = "Test Man" };
+                        context.People.Add(person);
+
+                        Assert.Throws<DbUpdateException>(() => context.SaveChanges());
+                    }
+                }
+            }
+        }
+    }
+
+    public class FrontEndContextFactory : IDbContextFactory<FrontEndContext>
+    {
+        /// <summary>
+        /// Could not invoke this command on the startup project 'mvc-demo.database.tests'.
+        /// Entity Framework Core does not support commands on class library projects in ASP.NET Core and .NET Core applications.
+        /// </summary>
+        static void Main()
+        {
+        }
+
+        public FrontEndContext Create(DbContextFactoryOptions options)
+        {
+            return new FrontEndContext(new DbContextOptionsBuilder<FrontEndContext>().UseSqlServer(@"Server=.\SQLEXPRESS;Database=mvc-demo.database.tests;Trusted_Connection=true").Options);
         }
     }
 }

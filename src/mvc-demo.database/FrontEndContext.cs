@@ -12,5 +12,13 @@ namespace mvc_demo.database
         }
 
         public DbSet<Person> People { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            modelBuilder
+                .Entity<Person>()
+                .Property(p => p.Id)
+                .ValueGeneratedNever();
+        }
     }
 }
