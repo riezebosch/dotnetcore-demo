@@ -52,8 +52,8 @@ namespace rabbitmq_demo_service.tests
         [Fact]
         public void WhenExecutingCreatePersonCommandPersonCreatedEventIsRaised()
         {
-            var receiver = new Mock<ISender>();
-            receiver.Setup(
+            var sender = new Mock<ISender>();
+            sender.Setup(
                 m => m.Publish(It.Is<PersonCreated>(a =>
                     a.Id != 0
                     && a.FirstName == "Test"
@@ -62,11 +62,11 @@ namespace rabbitmq_demo_service.tests
 
             using (var context = new DemoContext(CreateOptions()))
             {
-                var service = new PeopleService(context, receiver.Object);
+                var service = new PeopleService(context, sender.Object);
                 service.Execute(new CreatePerson { FirstName = "Test", LastName = "Man" });
             }
 
-            receiver.Verify();
+            sender.Verify();
         }
     }
 }

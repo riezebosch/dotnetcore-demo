@@ -21,12 +21,16 @@ namespace mvc_demo.tests
     public class PeopleControllerTests
     {
         [Fact]
-        public void AddPersonPublishesPersonCreatedCommand()
+        public async Task AddPersonPublishesPersonCreatedCommand()
         {
-            using (var receiver = new Receiver())
+            using (var listener = new Receiver())
             {
                 var controller = new PeopleController();
-                var command = receiver.WaitForResult<CreatePerson>(() => controller.Create(new CreatePerson { FirstName = "first", LastName = "last" }));
+                var receiver = new WaitForReceive<CreatePerson>();
+                listener.Subscribe(receiver);
+
+                controller.Create(new CreatePerson { FirstName = "first", LastName = "last" });
+                var command = await receiver.WithTimeout(); 
 
                 Assert.NotNull(command);
                 Assert.Equal("first", command.FirstName);
@@ -55,18 +59,19 @@ namespace mvc_demo.tests
         }
 
         [Fact]
-        public void IntegrationTestOnPostRequest()
+        public async Task IntegrationTestOnPostRequest()
         {
             using (var server = StartTestServer())
             using (var client = server.CreateClient())
-            using (var receiver = new Receiver())
+            using (var listener = new Receiver())
             {
-                var command = receiver.WaitForResult<CreatePerson>(() =>
-                {
-                    var result = client.PostAsync("People/Create", new StringContent(JsonConvert.SerializeObject(new { FirstName = "first", LastName = "last" }), Encoding.UTF8, "application/json")).Result;
-                    Assert.Equal(HttpStatusCode.Redirect, result.StatusCode);
-                });
+                var receiver = new WaitForReceive<CreatePerson>();
+                listener.Subscribe(receiver);
 
+                var result = client.PostAsync("People/Create", new StringContent(JsonConvert.SerializeObject(new { FirstName = "first", LastName = "last" }), Encoding.UTF8, "application/json")).Result;
+                var command = await receiver;
+
+                Assert.Equal(HttpStatusCode.Redirect, result.StatusCode);
                 Assert.Equal("first", command.FirstName);
                 Assert.Equal("last", command.LastName);
             }

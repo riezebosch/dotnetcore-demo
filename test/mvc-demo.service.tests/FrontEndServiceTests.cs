@@ -3,11 +3,9 @@ using Moq;
 using mvc_demo.database;
 using rabbitmq_demo;
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
-using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace mvc_demo.service.tests
@@ -25,12 +23,11 @@ namespace mvc_demo.service.tests
             context.Setup(m => m.People).Returns(dbset.Object);
             context.Setup(m => m.SaveChanges()).Verifiable();
 
-            var receiver = new Mock<IReceiver>();
-            receiver.Setup(m => m.Subscribe(It.IsAny<Action<PersonCreated>>())).Callback<Action<PersonCreated>>(a => a(new PersonCreated { }));
+            var service = new FrontEndService(context.Object);
 
             // Act
-            var service = new FrontEndService(context.Object, receiver.Object);
-
+            service.Execute(new PersonCreated { });
+            
             // Assert
             dbset.Verify();
             context.Verify();
@@ -42,11 +39,10 @@ namespace mvc_demo.service.tests
             // Arrance
             var dbset = new DummyDbSet<Person>();
             var context = new DummyFrontEndContext(dbset);
-
-            var receiver = new DummyReceiver();
+            var service = new FrontEndService(context);
 
             // Act
-            var service = new FrontEndService(context, receiver);
+            service.Execute(new PersonCreated { });
 
             // Assert
             Assert.True(dbset.AddIsCalled);
@@ -83,19 +79,10 @@ namespace mvc_demo.service.tests
             }
         }
 
-        class DummyReceiver : IReceiver
-        {
-            public void Subscribe<T>(Action<T> action)
-            {
-                // Simulate the publish by invoking the action
-                var input = new PersonCreated { };
-                action((T)(object)input);
-            }
-        }
 
         [Fact]
         [Trait("type", "integration")]
-        public void FrontEndServiceShouldRespondToPersonCreatedEvents()
+        public async Task FrontEndServiceShouldRespondToPersonCreatedEvents()
         {
             // Arrange
             using (var context = new FrontEndContext(
@@ -108,8 +95,14 @@ namespace mvc_demo.service.tests
                 using (var receiver = new Receiver())
                 {
                     // Act
-                    var service = new FrontEndService(context, receiver);
-                    receiver.WaitForResult<PersonCreated>(() => sender.Publish(new PersonCreated { }));
+                    var service = new FrontEndService(context);
+                    receiver.Subscribe(service);
+
+                    var task = new WaitForReceive<PersonCreated>();
+                    receiver.Subscribe(task);
+
+                    sender.Publish(new PersonCreated { });
+                    await task;
                 }
 
                 // Assert

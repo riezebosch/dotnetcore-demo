@@ -32,7 +32,7 @@ namespace rabbitmq_demo.tests
                         It.Is<Person>(p => p.FirstName == "Test" && p.LastName == "Man")))
                     .Callback(() => wait.Set())
                     .Verifiable();
-                
+
                 // Act
                 listener
                     .Subscribe<Person>(mock.Object);
@@ -49,7 +49,7 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public void ConnectWithCredentials()
+        public async Task ConnectWithCredentials()
         {
             // Arrange
             var input = new Person { FirstName = "Test", LastName = "Man" };
@@ -60,20 +60,22 @@ namespace rabbitmq_demo.tests
                 Password = "guest"
             };
 
-            using (var wait = new ManualResetEvent(false))
             using (var listener = new Receiver(connection, "demo"))
             {
+                var receive = new WaitForReceive<Person>();
+                listener.Subscribe(receive);
+
                 // Act
-                listener.Subscribe<Person>(p => wait.Set());
                 using (var sender = new Sender(connection, "demo"))
                 {
                     sender.Publish(input);
                 }
 
                 // Assert
-                Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
+                await receive.WithTimeout(TimeSpan.FromSeconds(5));
             }
         }
+
 
         [Fact]
         public void SubsequentMessageShouldBeReceivedBySubscriber()
@@ -177,8 +179,8 @@ namespace rabbitmq_demo.tests
                 var mock = new Mock<IReceive<Person>>();
                 mock
                     .Setup(m => m.Execute(
-                        It.Is<rabbitmq_demo.tests.Person>(p => 
-                            p.FirstName == input.FirstName 
+                        It.Is<rabbitmq_demo.tests.Person>(p =>
+                            p.FirstName == input.FirstName
                             && p.LastName == input.LastName)))
                     .Callback(() => wait.Set());
 
@@ -224,33 +226,31 @@ namespace rabbitmq_demo.tests
         [Fact]
         public async Task WaitForResult()
         {
-            using (var receiver = new Receiver())
+            using (var listener = new Receiver())
             using (var sender = new Sender())
             {
-                var task = new ReceiveTask<int>();
-                receiver.Subscribe(task);
+                var receiver = new WaitForReceive<int>();
+                listener.Subscribe(receiver);
 
                 sender.Publish(3);
 
-                var result = await task;
+                var result = await receiver;
                 Assert.Equal(3, result);
             }
         }
 
-
-        class ReceiveTask<T> : IReceive<T>
+        [Fact]
+        public async Task WaitForResultWithTimeoutThrowsException()
         {
-            TaskCompletionSource<T> tcs = new TaskCompletionSource<T>();
-
-            public void Execute(T item)
+            using (var listener = new Receiver())
+            using (var sender = new Sender())
             {
-                tcs.SetResult(item);
-            }
+                var receiver = new WaitForReceive<int>();
+                listener.Subscribe(receiver);
 
-            public TaskAwaiter<T> GetAwaiter()
-            {
-                return tcs.Task.GetAwaiter();
+                await Assert.ThrowsAsync<TimeoutException>(() => receiver.WithTimeout(TimeSpan.FromSeconds(1)));
             }
         }
     }
+    
 }

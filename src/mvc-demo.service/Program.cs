@@ -19,7 +19,7 @@ namespace mvc_demo.service
             using (var receiver = new Receiver(new ConnectionFactory { HostName = "curistm03", UserName = "manuel", Password = "manuel" }, "mvc-demo"))
             {
                 context.Database.Migrate();
-                var service = new FrontEndService(context, receiver);
+                var service = new FrontEndService(context);
 
                 Console.ReadKey();
             }

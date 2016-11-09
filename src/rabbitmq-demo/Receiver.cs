@@ -9,7 +9,9 @@ using System.Threading;
 
 namespace rabbitmq_demo
 {
+#pragma warning disable CS0618 // Type or member is obsolete
     public class Receiver : IReceiver, IDisposable
+#pragma warning restore CS0618 // Type or member is obsolete
     {
         private readonly string _exchange;
 

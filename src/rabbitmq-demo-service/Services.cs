@@ -33,7 +33,7 @@ namespace rabbitmq_demo_service
             var builder = new ContainerBuilder();
 
             builder.RegisterType<DemoContext>();
-            builder.RegisterType<PeopleService>();
+            builder.RegisterType<PeopleService>().As<IReceive<CreatePerson>>();
             builder.RegisterType<Receiver>();
             builder.RegisterType<Sender>().As<ISender>();
             builder.RegisterInstance(CreateOptions());
@@ -41,11 +41,7 @@ namespace rabbitmq_demo_service
             var container = builder.Build();
             container
                 .Resolve<Receiver>()
-                .Subscribe<CreatePerson>(p =>
-                {
-                    container.Resolve<PeopleService>().Execute(p);
-                    Received?.Invoke(p);
-                });
+                .Subscribe(container.Resolve<IReceive<CreatePerson>>());
 
             return container;
         }
