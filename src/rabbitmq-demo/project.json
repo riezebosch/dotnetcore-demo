@@ -1,18 +1,23 @@
 {
+  "title": "rabbitmq-eventbus",
   "version": "1.0.0-*",
-
+  "authors": [ "Manuel Riezebosch" ],
+  "description": "Use RabbitMQ as an event bus.",
+  "packOptions": {
+    "repository": { "url": "https://github.com/riezebosch/dotnetcore-demo" },
+    "owners": [ "Manuel Riezebosch" ],
+    "summary": "Use RabbitMQ as an event bus.",
+    "tags": [ "rabbitmq", "queue", "event", "bus", "micro", "service" ]
+  },
   "dependencies": {
     "RabbitMQ.Client": "4.1.1-rc1",
     "Newtonsoft.Json": "9.0.1"
   },
 
   "frameworks": {
-    "netcoreapp1.0": {
+    "netstandard1.6": {
       "dependencies": {
-        "Microsoft.NETCore.App": {
-          "type": "platform",
-          "version": "1.0.1"
-        }
+        "NETStandard.Library": "1.6.0"
       }
     }
   }
