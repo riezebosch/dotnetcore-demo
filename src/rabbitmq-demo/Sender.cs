@@ -14,6 +14,8 @@ namespace rabbitmq_demo
         IConnection _connection;
         IModel _channel;
 
+        public event EventHandler<SendEventArgs> Send;
+
         public Sender(string exchange = "demo")
             : this(new ConnectionFactory { HostName = "localhost" },
                   exchange)
@@ -35,6 +37,8 @@ namespace rabbitmq_demo
             var routingKey = typeof(T).Name;
 
             var message = JsonConvert.SerializeObject(input);
+            Send?.Invoke(this, new SendEventArgs { Topic = routingKey, Message = message });
+
             var body = Encoding.UTF8.GetBytes(message);
             _channel.BasicPublish(exchange: _exchange,
                                  routingKey: routingKey,

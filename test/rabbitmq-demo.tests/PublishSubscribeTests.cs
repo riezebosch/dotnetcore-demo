@@ -276,6 +276,20 @@ namespace rabbitmq_demo.tests
                 Assert.Equal("3", message.Message);
             }
         }
+
+        [Fact]
+        public void SenderRaisesEvent()
+        {
+            using (var sender = new Sender())
+            using (var listener = new Listener())
+            {
+                var message = string.Empty;
+                sender.Send += (o, e) => message = e.Message;
+
+                sender.Publish("hallo");
+
+                Assert.Equal("\"hallo\"", message);
+            }
+        }
     }
-    
 }

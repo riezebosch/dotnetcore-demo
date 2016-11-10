@@ -10,6 +10,11 @@ namespace rabbitmq_console
 {
     public class Program
     {
+        private class CreatePerson
+        {
+            public string FirstName { get; set; }
+        }
+
         public static void Main()
         {
             var connection = new ConnectionFactory
@@ -19,30 +24,33 @@ namespace rabbitmq_console
                 Password = "manuel"
             };
 
-            using (var listener = new Listener(connection, "rabbitmq-demo"))
-            using (var sender = new Sender(connection, exchange: "rabbitmq-demo"))
+
+            using (var listener = new Listener(connection, "DeelnemerService"))
+            using (var sender = new Sender(connection, exchange: "DeelnemerService"))
             {
                 listener.Received += Print;
-                listener.Subscribe(new WriteLine());
+                sender.Send += Print;
+                listener.Subscribe(new WriteLine<CreatePerson>());
 
                 string input = string.Empty;
                 while ((input = Console.ReadLine()) != "exit")
                 {
-                    sender.Publish(input);
+                    sender.Publish(new CreatePerson { FirstName = input });
                 }
             }
         }
 
-        private static void Print(object sender, ReceivedEventArgs e)
+        private static void Print(object sender, EventArgs e)
         {
-            WriteLineColor(e.ToString(), ConsoleColor.DarkGray);
+            WriteLineColor($@"{e.GetType().Name}
+  {e.ToString()}", ConsoleColor.DarkGray);
         }
 
-        private class WriteLine : IReceive<string>
+        private class WriteLine<T> : IReceive<T>
         {
-            public void Execute(string item)
+            public void Execute(T item)
             {
-                WriteLineColor(item, ConsoleColor.Green);
+                WriteLineColor(item.ToString(), ConsoleColor.Green);
             }
 
         }
