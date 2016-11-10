@@ -4,7 +4,7 @@
 
   "dependencies": {
     "xunit": "2.2.0-beta3-build3402",
-    "rabbitmq-demo": "1.1.2-*",
+    "rabbitmq-demo": "1.*",
     "dotnet-test-xunit": "2.2.0-preview2-build1029",
     "RabbitMQ.Client": "4.1.1-rc1",
     "ef-demo": "1.0.0-*",

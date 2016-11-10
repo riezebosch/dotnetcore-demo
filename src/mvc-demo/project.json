@@ -43,7 +43,7 @@
       "version": "1.0.0-preview2-final",
       "type": "build"
     },
-    "rabbitmq-demo": "1.0.0-*"
+    "rabbitmq-demo": "1.*"
   },
 
   "tools": {

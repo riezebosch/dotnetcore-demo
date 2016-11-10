@@ -9,7 +9,7 @@
       "type": "platform",
       "version": "1.0.1"
     },
-    "rabbitmq-demo": "1.0.0-*",
+    "rabbitmq-demo": "1.*",
     "mvc-demo.database": "1.0.0-*",
     "Microsoft.EntityFrameworkCore.SqlServer": "1.0.1"
   },

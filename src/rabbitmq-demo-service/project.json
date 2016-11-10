@@ -6,7 +6,7 @@
 
   "dependencies": {
     "ef-demo": "1.0.0-*",
-    "rabbitmq-demo": "1.1.2",
+    "rabbitmq-demo": "1.*",
     "Autofac": "4.2.0",
     "Microsoft.NETCore.App": {
       "type": "platform",

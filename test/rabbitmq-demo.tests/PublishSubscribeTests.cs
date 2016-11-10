@@ -371,8 +371,11 @@ namespace rabbitmq_demo.tests
                 mock.Setup(m => m.Foo());
 
                 var builder = new ContainerBuilder();
-                builder.RegisterInstance(mock.Object);
-                builder.RegisterType<ReceiverWithDependency>().As<IReceive<int>>();
+                builder
+                    .RegisterInstance(mock.Object);
+                builder
+                    .RegisterType<ReceiverWithDependency>()
+                    .As<IReceive<int>>();
 
                 listener.Subscribe<int>(builder.Build());
 
