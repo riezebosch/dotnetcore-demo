@@ -40,25 +40,25 @@ namespace rabbitmq_demo
             channel.Dispose();
         }
 
-        public void Subscribe<T>(Func<IReceive<T>> factory)
+        public void Subscribe<TContract>(Func<IReceive<TContract>> factory)
         {
             var builder = new ContainerBuilder();
             builder.Register(c => factory());
 
-            Subscribe<T>(builder.Build());
+            Subscribe<TContract>(builder.Build());
         }
 
-        public void Subscribe<T>(IReceive<T> receiver)
+        public void Subscribe<TContract>(IReceive<TContract> receiver)
         {
             var builder = new ContainerBuilder();
             builder.RegisterInstance(receiver);
 
-            Subscribe<T>(builder.Build());
+            Subscribe<TContract>(builder.Build());
         }
 
-        public void Subscribe<T>(IContainer container)
+        public void Subscribe<TContract>(IContainer container)
         {
-            var routingkey = typeof(T).Name;
+            var routingkey = typeof(TContract).Name;
 
             var queueName = channel.QueueDeclare().QueueName;
             channel.QueueBind(queue: queueName,
@@ -70,7 +70,7 @@ namespace rabbitmq_demo
             {
                 using (var scope = container.BeginLifetimeScope())
                 {
-                    var receiver = scope.Resolve<IReceive<T>>();
+                    var receiver = scope.Resolve<IReceive<TContract>>();
                     var content = Encoding.UTF8.GetString(ea.Body);
 
                     Received?.Invoke(this, new ReceivedEventArgs
@@ -80,7 +80,7 @@ namespace rabbitmq_demo
                         Message = content
                     });
 
-                    receiver.Execute(JsonConvert.DeserializeObject<T>(content));
+                    receiver.Execute(JsonConvert.DeserializeObject<TContract>(content));
                 }
             };
 
