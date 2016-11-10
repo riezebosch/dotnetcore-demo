@@ -56,7 +56,7 @@ namespace rabbitmq_demo
                 {
                     HandledBy = receiver.GetType(),
                     Topic = routingkey,
-                    Content = content
+                    Message = content
                 });
 
                 receiver.Execute(JsonConvert.DeserializeObject<T>(content));

@@ -3,6 +3,7 @@ using rabbitmq_demo;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading.Tasks;
 
 namespace rabbitmq_console
@@ -18,10 +19,11 @@ namespace rabbitmq_console
                 Password = "manuel"
             };
 
-            using (var receiver = new Listener(connection, "rabbitmq-demo"))
+            using (var listener = new Listener(connection, "rabbitmq-demo"))
             using (var sender = new Sender(connection, exchange: "rabbitmq-demo"))
             {
-                receiver.Subscribe(new WriteLine());
+                listener.Received += Print;
+                listener.Subscribe(new WriteLine());
 
                 string input = string.Empty;
                 while ((input = Console.ReadLine()) != "exit")
@@ -31,12 +33,34 @@ namespace rabbitmq_console
             }
         }
 
+        private static void Print(object sender, ReceivedEventArgs e)
+        {
+            WriteLineColor(e.ToString(), ConsoleColor.DarkGray);
+        }
+
         private class WriteLine : IReceive<string>
         {
             public void Execute(string item)
             {
-                Console.WriteLine(item);
+                WriteLineColor(item, ConsoleColor.Green);
+            }
+
+        }
+
+        private static void WriteLineColor(string text, ConsoleColor color)
+        {
+            var original = Console.ForegroundColor;
+            Console.ForegroundColor = color;
+
+            try
+            {
+                Console.WriteLine(text);
+            }
+            finally
+            {
+                Console.ForegroundColor = original;
             }
         }
+
     }
 }

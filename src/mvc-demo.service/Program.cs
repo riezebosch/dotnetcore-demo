@@ -16,15 +16,18 @@ namespace mvc_demo.service
             using (var context = new FrontEndContext(
                 new DbContextOptionsBuilder<FrontEndContext>()
                 .UseSqlServer(@"Server=.\SQLEXPRESS;Database=mvc-demo;Trusted_Connection=true").Options))
-            using (var receiver = new Listener(new ConnectionFactory { HostName = "curistm03", UserName = "manuel", Password = "manuel" }, "mvc-demo"))
+            using (var listener = new Listener(new ConnectionFactory { HostName = "curistm03", UserName = "manuel", Password = "manuel" }, "mvc-demo"))
             {
+                listener.Received += (o, e) => Console.WriteLine(e);
                 context.Database.Migrate();
 
                 var service = new FrontEndService(context);
-                receiver.Subscribe(service);
+                listener.Subscribe(service);
 
                 Console.ReadKey();
             }
         }
+
+    
     }
 }

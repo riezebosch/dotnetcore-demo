@@ -273,7 +273,7 @@ namespace rabbitmq_demo.tests
                 var message = messages.Single();
                 Assert.Equal(receiver.GetType(), message.HandledBy);
                 Assert.Equal("Int32", message.Topic);
-                Assert.Equal("3", message.Content);
+                Assert.Equal("3", message.Message);
             }
         }
     }
