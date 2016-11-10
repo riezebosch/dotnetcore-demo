@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Autofac;
+using Microsoft.EntityFrameworkCore;
 using mvc_demo.database;
 using RabbitMQ.Client;
 using rabbitmq_demo;
@@ -13,17 +14,24 @@ namespace mvc_demo.service
     {
         public static void Main()
         {
-            using (var context = new FrontEndContext(
-                new DbContextOptionsBuilder<FrontEndContext>()
-                .UseSqlServer(@"Server=.\SQLEXPRESS;Database=mvc-demo;Trusted_Connection=true").Options))
-            using (var listener = new Listener(new ConnectionFactory { HostName = "curistm03", UserName = "manuel", Password = "manuel" }, "mvc-demo"))
+            var builder = new ContainerBuilder();
+            builder
+                .Register(c => new FrontEndContext(
+                    new DbContextOptionsBuilder<FrontEndContext>()
+                    .UseSqlServer(@"Server=.\SQLEXPRESS;Database=mvc-demo;Trusted_Connection=true")
+                    .Options))
+            .As<IFrontEndContext>();
+
+            builder
+                .RegisterType<FrontEndService>()
+                .As<IReceive<PersonCreated>>();
+
+            using (var listener = new Listener(new ConnectionFactory { HostName = "localhost", UserName = "guest", Password = "guest" }, "mvc-demo"))
+            using (var container = builder.Build())
             {
                 listener.Received += (o, e) => Console.WriteLine(e);
-                context.Database.Migrate();
 
-                var service = new FrontEndService(context);
-                listener.Subscribe(service);
-
+                listener.Subscribe<PersonCreated>(container);
                 Console.ReadKey();
             }
         }

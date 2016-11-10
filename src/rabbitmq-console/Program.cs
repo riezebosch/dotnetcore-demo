@@ -30,6 +30,7 @@ namespace rabbitmq_console
             {
                 listener.Received += Print;
                 sender.Send += Print;
+
                 listener.Subscribe(new WriteLine<CreatePerson>());
 
                 string input = string.Empty;

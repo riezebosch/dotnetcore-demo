@@ -12,34 +12,23 @@ namespace rabbitmq_demo_service
 {
     public class Program
     {
-        /// <summary>
-        /// https://docs.efproject.net/en/latest/miscellaneous/testing.html#writing-tests
-        /// </summary>
-        /// <returns>Fresh options for every test.</returns>
-        private static DbContextOptions CreateOptions()
-        {
-            // Create a fresh service provider, and therefore a fresh 
-            // InMemory database instance.
-            var serviceProvider = new ServiceCollection()
-                .AddEntityFrameworkInMemoryDatabase()
-                .BuildServiceProvider();
-
-            // Create a new options instance telling the context to use an
-            // InMemory database and the new service provider.
-            var builder = new DbContextOptionsBuilder<DemoContext>();
-            builder.UseInMemoryDatabase()
-                       .UseInternalServiceProvider(serviceProvider);
-
-            return builder.Options;
-        }
         public static void Main()
         {
-            using (var context = new DemoContext(CreateOptions()))
-            using (var sender = new Sender())
+            var builder = new ContainerBuilder();
+            builder
+                .RegisterType<PeopleService>()
+                .As<IReceive<CreatePerson>>();
+            builder
+                .RegisterType<DemoContext>();
+            builder
+                .Register(c =>
+                    new DbContextOptionsBuilder<DemoContext>().UseSqlite(@"Filename=.\peopleservice.db").Options);
+
+            using (var listener = new Listener())
+            using (var container = builder.Build())
             {
-                var listener = new Listener();
                 listener.Received += (o, e) => Console.WriteLine(e);
-                listener.Subscribe(new PeopleService(context, sender));
+                listener.Subscribe<CreatePerson>(container);
 
                 Console.ReadKey();
             }

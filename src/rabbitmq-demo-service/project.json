@@ -12,7 +12,8 @@
       "type": "platform",
       "version": "1.0.1"
     },
-    "Microsoft.EntityFrameworkCore.InMemory": "1.0.1"
+    "Microsoft.EntityFrameworkCore.InMemory": "1.0.1",
+    "Microsoft.EntityFrameworkCore.Sqlite": "1.0.1"
   },
 
   "frameworks": {
