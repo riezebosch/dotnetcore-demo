@@ -68,9 +68,9 @@ namespace rabbitmq_demo
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
-                using (container.BeginLifetimeScope())
+                using (var scope = container.BeginLifetimeScope())
                 {
-                    var receiver = container.Resolve<IReceive<T>>();
+                    var receiver = scope.Resolve<IReceive<T>>();
                     var content = Encoding.UTF8.GetString(ea.Body);
 
                     Received?.Invoke(this, new ReceivedEventArgs
