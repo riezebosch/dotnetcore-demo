@@ -6,8 +6,8 @@
 
   "dependencies": {
     "ef-demo": "1.0.0-*",
-    "rabbitmq-demo": "1.0.0-*",
-    "Autofac": "4.1.1",
+    "rabbitmq-demo": "1.1.2",
+    "Autofac": "4.2.0",
     "Microsoft.NETCore.App": {
       "type": "platform",
       "version": "1.0.1"

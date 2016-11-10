@@ -1,4 +1,5 @@
-﻿using ef_demo;
+﻿using Autofac;
+using ef_demo;
 using Moq;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
@@ -274,6 +275,175 @@ namespace rabbitmq_demo.tests
                 Assert.Equal(receiver.GetType(), message.HandledBy);
                 Assert.Equal("Int32", message.Topic);
                 Assert.Equal("3", message.Message);
+            }
+        }
+
+        [Fact]
+        public async Task ListenerUsesFactoryToCreateInstances()
+        {
+            // Arrange
+            using (var listener = new Listener())
+            using (var sender = new Sender())
+            {
+                var repository = new MockRepository(MockBehavior.Strict);
+                listener
+                    .Subscribe(() =>
+                    {
+                        var mock = repository.Create<IReceive<int>>();
+                        mock.Setup(m => m.Execute(3)).Verifiable();
+
+                        return mock.Object;
+                    });
+
+                var waiter = new ReceiveAsync<int>();
+                listener.Subscribe(waiter);
+
+                // Act
+                sender.Publish(3);
+                await waiter.WithTimeout();
+
+                // Assert
+                repository.Verify();
+            }
+        }
+
+        [Fact]
+        public async Task ListenerDoesNotDisposeInstanceSubscribedReceivers()
+        {
+            // Arrange
+            using (var listener = new Listener())
+            using (var sender = new Sender())
+            {
+                var mock = new Mock<IDisposable>();
+                listener.Subscribe(mock.As<IReceive<int>>().Object);
+
+                var waiter = new ReceiveAsync<int>();
+                listener.Subscribe(waiter);
+                
+                // Act
+                sender.Publish(3);
+                await waiter.WithTimeout();
+
+                // Assert
+                mock.Verify(m => m.Dispose(), Times.Never);
+            }
+        }
+
+        [Fact]
+        public async Task ListenerDisposesFactoryCreatedReceivers()
+        {
+            // Arrange
+            using (var listener = new Listener())
+            using (var sender = new Sender())
+            {
+                var reposistory = new MockRepository(MockBehavior.Strict);
+                listener.Subscribe(() =>
+                {
+                    var mock = reposistory.Create<IReceive<int>>();
+                    mock
+                        .As<IDisposable>()
+                        .Setup(m => m.Dispose())
+                        .Verifiable();
+
+                    return mock.Object;
+                });
+
+                var waiter = new ReceiveAsync<int>();
+                listener.Subscribe(waiter);
+
+                // Act
+                sender.Publish(3);
+                await waiter.WithTimeout();
+
+                // Assert
+                reposistory.Verify();
+            }
+        }
+
+        [Fact]
+        public async Task ListenerResolvesDependenciesToCreateInstances()
+        {
+            // Arrange
+            using (var listener = new Listener())
+            using (var sender = new Sender())
+            {
+                var mock = new Mock<IDependency>();
+                mock.Setup(m => m.Foo());
+
+                var builder = new ContainerBuilder();
+                builder.RegisterInstance(mock.Object);
+                builder.RegisterType<ReceiverWithDependency>().As<IReceive<int>>();
+
+                listener.Subscribe<int>(builder.Build());
+
+                var waiter = new ReceiveAsync<int>();
+                listener.Subscribe(waiter);
+
+                // Act
+                sender.Publish(3);
+                await waiter.WithTimeout();
+
+                // Assert
+                mock.Verify(m => m.Foo(), Times.Once);
+            }
+        }
+
+        [Fact]
+        public async Task ListenerDisposesDependenciesResolvedToCreateInstances()
+        {
+            // Arrange
+            using (var listener = new Listener())
+            using (var sender = new Sender())
+            {
+                var repository = new MockRepository(MockBehavior.Strict);
+
+                var builder = new ContainerBuilder();
+                builder.Register(c =>
+                {
+                    var mock = repository.Create<IDependency>();
+                    mock.Setup(x => x.Foo())
+                        .Verifiable();
+                    mock.As<IDisposable>()
+                        .Setup(x => x.Dispose())
+                        .Verifiable();
+
+                    return mock.Object;
+                });
+
+                builder
+                    .RegisterType<ReceiverWithDependency>()
+                    .As<IReceive<int>>();
+
+                listener.Subscribe<int>(builder.Build());
+
+                var waiter = new ReceiveAsync<int>();
+                listener.Subscribe(waiter);
+
+                // Act
+                sender.Publish(3);
+                await waiter.WithTimeout();
+
+                // Assert
+                repository.VerifyAll();
+            }
+        }
+
+        public interface IDependency
+        {
+            void Foo();
+        }
+
+        class ReceiverWithDependency : IReceive<int>
+        {
+            private readonly IDependency _dependency;
+
+            public ReceiverWithDependency(IDependency dependency)
+            {
+                _dependency = dependency;
+            }
+            public void Execute(int item)
+            {
+                _dependency.Foo();
             }
         }
 

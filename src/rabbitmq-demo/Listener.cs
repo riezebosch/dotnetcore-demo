@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Autofac;
+using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System;
@@ -39,7 +40,23 @@ namespace rabbitmq_demo
             channel.Dispose();
         }
 
+        public void Subscribe<T>(Func<IReceive<T>> factory)
+        {
+            var builder = new ContainerBuilder();
+            builder.Register(c => factory());
+
+            Subscribe<T>(builder.Build());
+        }
+
         public void Subscribe<T>(IReceive<T> receiver)
+        {
+            var builder = new ContainerBuilder();
+            builder.RegisterInstance(receiver);
+
+            Subscribe<T>(builder.Build());
+        }
+
+        public void Subscribe<T>(IContainer container)
         {
             var routingkey = typeof(T).Name;
 
@@ -51,15 +68,20 @@ namespace rabbitmq_demo
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
-                var content = Encoding.UTF8.GetString(ea.Body);
-                Received?.Invoke(this, new ReceivedEventArgs
+                using (container.BeginLifetimeScope())
                 {
-                    HandledBy = receiver.GetType(),
-                    Topic = routingkey,
-                    Message = content
-                });
+                    var receiver = container.Resolve<IReceive<T>>();
+                    var content = Encoding.UTF8.GetString(ea.Body);
 
-                receiver.Execute(JsonConvert.DeserializeObject<T>(content));
+                    Received?.Invoke(this, new ReceivedEventArgs
+                    {
+                        HandledBy = receiver.GetType(),
+                        Topic = routingkey,
+                        Message = content
+                    });
+
+                    receiver.Execute(JsonConvert.DeserializeObject<T>(content));
+                }
             };
 
             channel.BasicConsume(queue: queueName,
