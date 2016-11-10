@@ -251,6 +251,31 @@ namespace rabbitmq_demo.tests
                 await Assert.ThrowsAsync<TimeoutException>(() => receiver.WithTimeout(TimeSpan.FromSeconds(1)));
             }
         }
+
+        [Fact]  
+        public async Task ListenerRaisesEvent()
+        {
+            // Arrange
+            using (var listener = new Listener())
+            using (var sender = new Sender())
+            {
+                var messages = new List<ReceivedEventArgs>();
+                listener.Received += (o, e) => messages.Add(e);
+
+                var receiver = new ReceiveAsync<int>();
+                listener.Subscribe(receiver);
+
+                // Act
+                sender.Publish(3);
+                await receiver.WithTimeout();
+
+                // Assert
+                var message = messages.Single();
+                Assert.Equal(receiver.GetType(), message.HandledBy);
+                Assert.Equal("Int32", message.Topic);
+                Assert.Equal("3", message.Content);
+            }
+        }
     }
     
 }

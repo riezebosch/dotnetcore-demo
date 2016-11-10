@@ -16,6 +16,8 @@ namespace rabbitmq_demo
         IConnection connection;
         IModel channel;
 
+        public event EventHandler<ReceivedEventArgs> Received;
+
         public Listener(string exchange = "demo")
             : this(new ConnectionFactory() { HostName = "localhost" },
                   exchange)
@@ -47,16 +49,22 @@ namespace rabbitmq_demo
                               routingKey: routingkey);
 
             var consumer = new EventingBasicConsumer(channel);
-            consumer.Received += (model, ea) => receiver.Execute(Convert<T>(ea.Body));
+            consumer.Received += (model, ea) =>
+            {
+                var content = Encoding.UTF8.GetString(ea.Body);
+                Received?.Invoke(this, new ReceivedEventArgs
+                {
+                    HandledBy = receiver.GetType(),
+                    Topic = routingkey,
+                    Content = content
+                });
+
+                receiver.Execute(JsonConvert.DeserializeObject<T>(content));
+            };
 
             channel.BasicConsume(queue: queueName,
                              noAck: true,
                              consumer: consumer);
-        }
-
-        private static T Convert<T>(byte[] body)
-        {
-            return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(body));
         }
     }
 }
