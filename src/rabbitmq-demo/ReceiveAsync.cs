@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace rabbitmq_demo
 {
-    public class WaitForReceive<T> : IReceive<T>
+    public class ReceiveAsync<T> : IReceive<T>
     {
         TaskCompletionSource<T> tcs = new TaskCompletionSource<T>();
 

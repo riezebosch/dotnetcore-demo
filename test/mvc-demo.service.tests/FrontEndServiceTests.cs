@@ -98,7 +98,7 @@ namespace mvc_demo.service.tests
                     var service = new FrontEndService(context);
                     receiver.Subscribe(service);
 
-                    var task = new WaitForReceive<PersonCreated>();
+                    var task = new ReceiveAsync<PersonCreated>();
                     receiver.Subscribe(task);
 
                     sender.Publish(new PersonCreated { });

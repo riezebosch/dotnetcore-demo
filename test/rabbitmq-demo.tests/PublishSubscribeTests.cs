@@ -62,7 +62,7 @@ namespace rabbitmq_demo.tests
 
             using (var listener = new Listener(connection, "demo"))
             {
-                var receive = new WaitForReceive<Person>();
+                var receive = new ReceiveAsync<Person>();
                 listener.Subscribe(receive);
 
                 // Act
@@ -229,7 +229,7 @@ namespace rabbitmq_demo.tests
             using (var listener = new Listener())
             using (var sender = new Sender())
             {
-                var receiver = new WaitForReceive<int>();
+                var receiver = new ReceiveAsync<int>();
                 listener.Subscribe(receiver);
 
                 sender.Publish(3);
@@ -245,7 +245,7 @@ namespace rabbitmq_demo.tests
             using (var listener = new Listener())
             using (var sender = new Sender())
             {
-                var receiver = new WaitForReceive<int>();
+                var receiver = new ReceiveAsync<int>();
                 listener.Subscribe(receiver);
 
                 await Assert.ThrowsAsync<TimeoutException>(() => receiver.WithTimeout(TimeSpan.FromSeconds(1)));

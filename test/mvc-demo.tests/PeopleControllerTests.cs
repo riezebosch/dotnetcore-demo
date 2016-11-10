@@ -26,7 +26,7 @@ namespace mvc_demo.tests
             using (var listener = new Listener())
             {
                 var controller = new PeopleController();
-                var receiver = new WaitForReceive<CreatePerson>();
+                var receiver = new ReceiveAsync<CreatePerson>();
                 listener.Subscribe(receiver);
 
                 controller.Create(new CreatePerson { FirstName = "first", LastName = "last" });
@@ -65,7 +65,7 @@ namespace mvc_demo.tests
             using (var client = server.CreateClient())
             using (var listener = new Listener())
             {
-                var receiver = new WaitForReceive<CreatePerson>();
+                var receiver = new ReceiveAsync<CreatePerson>();
                 listener.Subscribe(receiver);
 
                 var result = client.PostAsync("People/Create", new StringContent(JsonConvert.SerializeObject(new { FirstName = "first", LastName = "last" }), Encoding.UTF8, "application/json")).Result;
