@@ -7,7 +7,7 @@ namespace rabbitmq_demo_service
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
             var services = new Services();
             services.Received += Console.WriteLine;

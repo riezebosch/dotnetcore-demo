@@ -21,7 +21,7 @@ namespace rabbitmq_demo_service
             _container = Configure();
         }
 
-        public event Action<object> Received;
+        public event Action<string> Received;
 
         public void Dispose()
         {
@@ -34,13 +34,13 @@ namespace rabbitmq_demo_service
 
             builder.RegisterType<DemoContext>();
             builder.RegisterType<PeopleService>().As<IReceive<CreatePerson>>();
-            builder.RegisterType<Receiver>();
+            builder.RegisterType<Listener>();
             builder.RegisterType<Sender>().As<ISender>();
             builder.RegisterInstance(CreateOptions());
 
             var container = builder.Build();
             container
-                .Resolve<Receiver>()
+                .Resolve<Listener>()
                 .Subscribe(container.Resolve<IReceive<CreatePerson>>());
 
             return container;

@@ -9,21 +9,20 @@ using System.Threading;
 
 namespace rabbitmq_demo
 {
-    [Obsolete("Use the Listener class and subscribe a service that implements the IReceive interface instead.")]
-    public class Receiver : IReceiver, IDisposable
+    public class Listener : IDisposable
     {
         private readonly string _exchange;
 
         IConnection connection;
         IModel channel;
 
-        public Receiver(string exchange = "demo")
+        public Listener(string exchange = "demo")
             : this(new ConnectionFactory() { HostName = "localhost" },
                   exchange)
         {
         }
 
-        public Receiver(IConnectionFactory factory, string exchange)
+        public Listener(IConnectionFactory factory, string exchange)
         {
             _exchange = exchange;
 
@@ -38,8 +37,7 @@ namespace rabbitmq_demo
             channel.Dispose();
         }
 
-        [Obsolete("Subscribe a class that implements the IReceive interface instead.")]
-        public void Subscribe<T>(Action<T> action)
+        public void Subscribe<T>(IReceive<T> receiver)
         {
             var routingkey = typeof(T).Name;
 
@@ -49,35 +47,11 @@ namespace rabbitmq_demo
                               routingKey: routingkey);
 
             var consumer = new EventingBasicConsumer(channel);
-            consumer.Received += (model, ea) => action(Convert<T>(ea.Body));
+            consumer.Received += (model, ea) => receiver.Execute(Convert<T>(ea.Body));
 
             channel.BasicConsume(queue: queueName,
                              noAck: true,
                              consumer: consumer);
-        }
-
-        [Obsolete("Subscribe a ReceiverTask instead.")]
-        public T WaitForResult<T>(Action publish, TimeSpan timeout)
-        {
-            T result = default(T);
-            using (var wait = new ManualResetEvent(false))
-            {
-                Subscribe<T>(p => { result = p; wait.Set(); });
-                publish();
-
-                if (!wait.WaitOne(timeout))
-                {
-                    throw new TimeoutException();
-                }
-            }
-
-            return result;
-        }
-
-        [Obsolete("Subscribe a ReceiverTask instead.")]
-        public T WaitForResult<T>(Action publish)
-        {
-            return WaitForResult<T>(publish, TimeSpan.FromSeconds(5));
         }
 
         private static T Convert<T>(byte[] body)

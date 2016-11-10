@@ -92,7 +92,7 @@ namespace mvc_demo.service.tests
                 context.Database.EnsureCreated();
 
                 using (var sender = new Sender())
-                using (var receiver = new Receiver())
+                using (var receiver = new Listener())
                 {
                     // Act
                     var service = new FrontEndService(context);

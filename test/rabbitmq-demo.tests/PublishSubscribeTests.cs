@@ -24,7 +24,7 @@ namespace rabbitmq_demo.tests
             var input = new Person { FirstName = "Test", LastName = "Man" };
 
             using (var wait = new ManualResetEvent(false))
-            using (var listener = new Receiver())
+            using (var listener = new Listener())
             {
                 var mock = new Mock<IReceive<Person>>();
                 mock
@@ -60,7 +60,7 @@ namespace rabbitmq_demo.tests
                 Password = "guest"
             };
 
-            using (var listener = new Receiver(connection, "demo"))
+            using (var listener = new Listener(connection, "demo"))
             {
                 var receive = new WaitForReceive<Person>();
                 listener.Subscribe(receive);
@@ -81,7 +81,7 @@ namespace rabbitmq_demo.tests
         public void SubsequentMessageShouldBeReceivedBySubscriber()
         {
             using (var wait = new CountdownEvent(2))
-            using (var listener = new Receiver())
+            using (var listener = new Listener())
             {
                 var mock = new Mock<IReceive<Person>>();
                 mock
@@ -113,8 +113,8 @@ namespace rabbitmq_demo.tests
         public void TwoListenersBothReceiveMessageAfterPublish()
         {
             using (var wait = new CountdownEvent(2))
-            using (var listener1 = new Receiver())
-            using (var listener2 = new Receiver())
+            using (var listener1 = new Listener())
+            using (var listener2 = new Listener())
             {
                 var mock = new Mock<IReceive<Person>>();
                 mock
@@ -138,7 +138,7 @@ namespace rabbitmq_demo.tests
         public void OneListenerReceivesTwoMessagesOfDifferentType()
         {
             using (var wait = new CountdownEvent(2))
-            using (var listener = new Receiver())
+            using (var listener = new Listener())
             {
                 var mock1 = new Mock<IReceive<Person>>();
                 mock1
@@ -174,7 +174,7 @@ namespace rabbitmq_demo.tests
             var input = new ef_demo.Person { FirstName = "Test", LastName = "Man" };
 
             using (var wait = new ManualResetEvent(false))
-            using (var listener = new Receiver())
+            using (var listener = new Listener())
             {
                 var mock = new Mock<IReceive<Person>>();
                 mock
@@ -204,7 +204,7 @@ namespace rabbitmq_demo.tests
             // Arrange
             var input = new Person { FirstName = "Test", LastName = "Man" };
 
-            using (var listener = new Receiver())
+            using (var listener = new Listener())
             using (var wait = new ManualResetEvent(false))
             {
                 var mock = new Mock<IReceive<SomethingUnrelated>>();
@@ -226,7 +226,7 @@ namespace rabbitmq_demo.tests
         [Fact]
         public async Task WaitForResult()
         {
-            using (var listener = new Receiver())
+            using (var listener = new Listener())
             using (var sender = new Sender())
             {
                 var receiver = new WaitForReceive<int>();
@@ -242,7 +242,7 @@ namespace rabbitmq_demo.tests
         [Fact]
         public async Task WaitForResultWithTimeoutThrowsException()
         {
-            using (var listener = new Receiver())
+            using (var listener = new Listener())
             using (var sender = new Sender())
             {
                 var receiver = new WaitForReceive<int>();

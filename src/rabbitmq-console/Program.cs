@@ -9,7 +9,7 @@ namespace rabbitmq_console
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
             var connection = new ConnectionFactory
             {
@@ -18,16 +18,24 @@ namespace rabbitmq_console
                 Password = "manuel"
             };
 
-            using (var receiver = new Receiver(connection, "rabbitmq-demo"))
+            using (var receiver = new Listener(connection, "rabbitmq-demo"))
             using (var sender = new Sender(connection, exchange: "rabbitmq-demo"))
             {
-                receiver.Subscribe<string>(Console.WriteLine);
+                receiver.Subscribe(new WriteLine());
 
                 string input = string.Empty;
                 while ((input = Console.ReadLine()) != "exit")
                 {
                     sender.Publish(input);
                 }
+            }
+        }
+
+        private class WriteLine : IReceive<string>
+        {
+            public void Execute(string item)
+            {
+                Console.WriteLine(item);
             }
         }
     }

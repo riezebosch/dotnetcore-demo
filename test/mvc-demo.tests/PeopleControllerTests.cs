@@ -23,7 +23,7 @@ namespace mvc_demo.tests
         [Fact]
         public async Task AddPersonPublishesPersonCreatedCommand()
         {
-            using (var listener = new Receiver())
+            using (var listener = new Listener())
             {
                 var controller = new PeopleController();
                 var receiver = new WaitForReceive<CreatePerson>();
@@ -63,7 +63,7 @@ namespace mvc_demo.tests
         {
             using (var server = StartTestServer())
             using (var client = server.CreateClient())
-            using (var listener = new Receiver())
+            using (var listener = new Listener())
             {
                 var receiver = new WaitForReceive<CreatePerson>();
                 listener.Subscribe(receiver);

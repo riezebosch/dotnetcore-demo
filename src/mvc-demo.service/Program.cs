@@ -11,15 +11,17 @@ namespace mvc_demo.service
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static void Main()
         {
             using (var context = new FrontEndContext(
                 new DbContextOptionsBuilder<FrontEndContext>()
                 .UseSqlServer(@"Server=.\SQLEXPRESS;Database=mvc-demo;Trusted_Connection=true").Options))
-            using (var receiver = new Receiver(new ConnectionFactory { HostName = "curistm03", UserName = "manuel", Password = "manuel" }, "mvc-demo"))
+            using (var receiver = new Listener(new ConnectionFactory { HostName = "curistm03", UserName = "manuel", Password = "manuel" }, "mvc-demo"))
             {
                 context.Database.Migrate();
+
                 var service = new FrontEndService(context);
+                receiver.Subscribe(service);
 
                 Console.ReadKey();
             }
