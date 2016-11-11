@@ -40,7 +40,7 @@ namespace rabbitmq_demo.tests
 
                 // Act
                 listener
-                    .Subscribe<Person>(service.Object);
+                    .Subscribe(service.Object);
 
                 using (var sender = new Sender())
                 {
@@ -292,15 +292,10 @@ namespace rabbitmq_demo.tests
             using (var listener = new Listener())
             using (var sender = new Sender())
             {
-                var repository = new MockRepository(MockBehavior.Strict);
+                var service = new Mock<IReceive<int>>();
+                service.Setup(m => m.Execute(3)).Verifiable();
                 listener
-                    .Subscribe(() =>
-                    {
-                        var mock = repository.Create<IReceive<int>>();
-                        mock.Setup(m => m.Execute(3)).Verifiable();
-
-                        return mock.Object;
-                    });
+                    .Subscribe(() => service.Object);
 
                 var waiter = new ReceiveAsync<int>();
                 listener.Subscribe(waiter);
@@ -310,7 +305,7 @@ namespace rabbitmq_demo.tests
                 await waiter.WithTimeout();
 
                 // Assert
-                repository.Verify();
+                service.Verify();
             }
         }
 

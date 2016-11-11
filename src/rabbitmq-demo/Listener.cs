@@ -59,7 +59,7 @@ namespace rabbitmq_demo
 
         public void Subscribe<TContract>(IContainer container)
         {
-            ValidateServiceRegistration<TContract>(container);
+            ValidateReceiverRegistration<TContract>(container);
 
             var routingkey = typeof(TContract).Name;
             var queueName = channel.QueueDeclare().QueueName;
@@ -67,12 +67,17 @@ namespace rabbitmq_demo
                           exchange: _exchange,
                           routingKey: routingkey);
 
-            var handler = new MessageReceivedHandle<TContract>(container);
-            handler.Received += Received;
+            var handler = new MessageReceivedHandler<TContract>(
+                container,
+                (c, m) => Received?.Invoke(this, new ReceivedEventArgs
+                {
+                    HandledBy = c,
+                    Topic = routingkey,
+                    Message = m
+                }));
 
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += handler.Handle;
-
 
             channel.BasicConsume(queue: queueName,
                              noAck: true,
@@ -80,42 +85,11 @@ namespace rabbitmq_demo
 
         }
 
-        private static void ValidateServiceRegistration<TContract>(IContainer container)
+        private static void ValidateReceiverRegistration<TContract>(IContainer container)
         {
             using (var scope = container.BeginLifetimeScope())
             {
                 scope.Resolve<IReceive<TContract>>();
-            }
-        }
-
-        internal class MessageReceivedHandle<TContract>
-        {
-            private readonly IContainer container;
-
-            public event EventHandler<ReceivedEventArgs> Received;
-
-            public MessageReceivedHandle(IContainer container)
-            {
-                this.container = container;
-            }
-
-            public void Handle(object sender, BasicDeliverEventArgs ea)
-            {
-                using (var scope = container.BeginLifetimeScope())
-                {
-                    var receiver = scope.Resolve<IReceive<TContract>>();
-                    var content = Encoding.UTF8.GetString(ea.Body);
-
-                    Received?.Invoke(this, new ReceivedEventArgs
-                    {
-                        HandledBy = receiver.GetType(),
-                        Topic = typeof(TContract).Name,
-                        Message = content
-                    });
-
-                    var item = JsonConvert.DeserializeObject<TContract>(content);
-                    receiver.Execute(item);
-                }
             }
         }
     }
