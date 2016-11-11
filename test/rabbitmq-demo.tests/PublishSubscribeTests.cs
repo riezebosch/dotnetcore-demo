@@ -1,4 +1,6 @@
 ﻿using Autofac;
+using Autofac.Core;
+using Autofac.Core.Registration;
 using ef_demo;
 using Moq;
 using Newtonsoft.Json;
@@ -27,16 +29,18 @@ namespace rabbitmq_demo.tests
             using (var wait = new ManualResetEvent(false))
             using (var listener = new Listener())
             {
-                var mock = new Mock<IReceive<Person>>();
-                mock
+                var service = new Mock<IReceive<Person>>();
+                service
                     .Setup(m => m.Execute(
-                        It.Is<Person>(p => p.FirstName == "Test" && p.LastName == "Man")))
+                        It.Is<Person>(p => 
+                            p.FirstName == "Test" 
+                            && p.LastName == "Man")))
                     .Callback(() => wait.Set())
                     .Verifiable();
 
                 // Act
                 listener
-                    .Subscribe<Person>(mock.Object);
+                    .Subscribe<Person>(service.Object);
 
                 using (var sender = new Sender())
                 {
@@ -45,7 +49,7 @@ namespace rabbitmq_demo.tests
 
                 // Assert
                 Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
-                mock.Verify();
+                service.Verify();
             }
         }
 
@@ -63,8 +67,8 @@ namespace rabbitmq_demo.tests
 
             using (var listener = new Listener(connection, "demo"))
             {
-                var receive = new ReceiveAsync<Person>();
-                listener.Subscribe(receive);
+                var waiter = new ReceiveAsync<Person>();
+                listener.Subscribe(waiter);
 
                 // Act
                 using (var sender = new Sender(connection, "demo"))
@@ -73,7 +77,7 @@ namespace rabbitmq_demo.tests
                 }
 
                 // Assert
-                await receive.WithTimeout(TimeSpan.FromSeconds(5));
+                await waiter.WithTimeout(TimeSpan.FromSeconds(5));
             }
         }
 
@@ -84,20 +88,20 @@ namespace rabbitmq_demo.tests
             using (var wait = new CountdownEvent(2))
             using (var listener = new Listener())
             {
-                var mock = new Mock<IReceive<Person>>();
-                mock
+                var service = new Mock<IReceive<Person>>();
+                service
                     .Setup(m => m.Execute(
                         It.Is<Person>(p => p.FirstName == "first")))
                     .Callback(() => wait.Signal())
                     .Verifiable();
 
-                mock
+                service
                     .Setup(m => m.Execute(
                         It.Is<Person>(p => p.FirstName == "second")))
                     .Callback(() => wait.Signal())
                     .Verifiable();
 
-                listener.Subscribe(mock.Object);
+                listener.Subscribe(service.Object);
 
                 using (var sender = new Sender())
                 {
@@ -106,7 +110,7 @@ namespace rabbitmq_demo.tests
                 }
 
                 Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
-                mock.Verify();
+                service.Verify();
             }
         }
 
@@ -117,13 +121,13 @@ namespace rabbitmq_demo.tests
             using (var listener1 = new Listener())
             using (var listener2 = new Listener())
             {
-                var mock = new Mock<IReceive<Person>>();
-                mock
+                var service = new Mock<IReceive<Person>>();
+                service
                     .Setup(m => m.Execute(It.IsAny<Person>()))
                     .Callback(() => wait.Signal());
 
-                listener1.Subscribe(mock.Object);
-                listener2.Subscribe(mock.Object);
+                listener1.Subscribe(service.Object);
+                listener2.Subscribe(service.Object);
 
                 using (var sender = new Sender())
                 {
@@ -131,7 +135,10 @@ namespace rabbitmq_demo.tests
                 }
 
                 Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
-                mock.Verify(m => m.Execute(It.IsAny<Person>()), Times.Exactly(2));
+                service
+                    .Verify(
+                        m => m.Execute(It.IsAny<Person>()),
+                        Times.Exactly(2));
             }
         }
 
@@ -141,20 +148,20 @@ namespace rabbitmq_demo.tests
             using (var wait = new CountdownEvent(2))
             using (var listener = new Listener())
             {
-                var mock1 = new Mock<IReceive<Person>>();
-                mock1
+                var service1 = new Mock<IReceive<Person>>();
+                service1
                     .Setup(m => m.Execute(It.IsAny<Person>()))
                     .Callback(() => wait.Signal())
                     .Verifiable();
 
-                var mock2 = new Mock<IReceive<string>>();
-                mock2
+                var service2 = new Mock<IReceive<string>>();
+                service2
                     .Setup(m => m.Execute(It.IsAny<string>()))
                     .Callback(() => wait.Signal())
                     .Verifiable();
 
-                listener.Subscribe(mock1.Object);
-                listener.Subscribe(mock2.Object);
+                listener.Subscribe(service1.Object);
+                listener.Subscribe(service2.Object);
 
                 using (var sender = new Sender())
                 {
@@ -163,8 +170,8 @@ namespace rabbitmq_demo.tests
                 }
 
                 Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
-                mock1.Verify();
-                mock2.Verify();
+                service1.Verify();
+                service2.Verify();
             }
         }
 
@@ -177,15 +184,15 @@ namespace rabbitmq_demo.tests
             using (var wait = new ManualResetEvent(false))
             using (var listener = new Listener())
             {
-                var mock = new Mock<IReceive<Person>>();
-                mock
+                var service = new Mock<IReceive<Person>>();
+                service
                     .Setup(m => m.Execute(
                         It.Is<rabbitmq_demo.tests.Person>(p =>
                             p.FirstName == input.FirstName
                             && p.LastName == input.LastName)))
                     .Callback(() => wait.Set());
 
-                listener.Subscribe(mock.Object);
+                listener.Subscribe(service.Object);
 
                 // Act
                 using (var sender = new Sender())
@@ -195,7 +202,7 @@ namespace rabbitmq_demo.tests
 
                 // Assert
                 Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
-                mock.Verify();
+                service.Verify();
             }
         }
 
@@ -314,8 +321,14 @@ namespace rabbitmq_demo.tests
             using (var listener = new Listener())
             using (var sender = new Sender())
             {
-                var mock = new Mock<IDisposable>();
-                listener.Subscribe(mock.As<IReceive<int>>().Object);
+                var mock = new Mock<IReceive<int>>();
+                mock
+                    .As<IDisposable>()
+                    .Setup(m => m.Dispose())
+                    .Throws<NotImplementedException>();
+
+                listener
+                    .Subscribe(mock.Object);
 
                 var waiter = new ReceiveAsync<int>();
                 listener.Subscribe(waiter);
@@ -323,9 +336,6 @@ namespace rabbitmq_demo.tests
                 // Act
                 sender.Publish(3);
                 await waiter.WithTimeout();
-
-                // Assert
-                mock.Verify(m => m.Dispose(), Times.Never);
             }
         }
 
@@ -374,8 +384,7 @@ namespace rabbitmq_demo.tests
                 builder
                     .RegisterInstance(dependency.Object);
                 builder
-                    .RegisterType<ReceiverWithDependency>()
-                    .As<IReceive<int>>();
+                    .RegisterReceiverFor<ReceiverWithDependency, int>();
 
                 listener.Subscribe<int>(builder.Build());
 
@@ -392,6 +401,38 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
+        public void ListenerThrowsExceptionWhenReceiverForContractIsNotResolved()
+        {
+            // Arrange
+            using (var listener = new Listener())
+            using (var sender = new Sender())
+            {
+                var builder = new ContainerBuilder();
+                builder
+                    .RegisterType<ReceiverWithDependency>();
+
+                // Act && Assert
+                Assert.Throws<ComponentNotRegisteredException>(() => listener.Subscribe<int>(builder.Build()));
+            }
+        }
+
+        [Fact]
+        public void ListenerThrowsExceptionWhenDependencyForReceiverIsNotResolved()
+        {
+            // Arrange
+            using (var listener = new Listener())
+            using (var sender = new Sender())
+            {
+                var builder = new ContainerBuilder();
+                builder
+                    .RegisterReceiverFor<ReceiverWithDependency, int>();
+
+                // Act && Assert
+                Assert.Throws<DependencyResolutionException>(() => listener.Subscribe<int>(builder.Build()));
+            }
+        }
+
+        [Fact]
         public async Task ListenerDisposesDependenciesResolvedToCreateInstances()
         {
             // Arrange
@@ -404,8 +445,6 @@ namespace rabbitmq_demo.tests
                 builder.Register(c =>
                 {
                     var dependency = repository.Create<IDependency>();
-                    dependency.Setup(x => x.Foo())
-                        .Verifiable();
                     dependency.As<IDisposable>()
                         .Setup(x => x.Dispose())
                         .Verifiable();
@@ -414,20 +453,22 @@ namespace rabbitmq_demo.tests
                 });
 
                 builder
-                    .RegisterType<ReceiverWithDependency>()
-                    .As<IReceive<int>>();
+                    .RegisterReceiverFor<ReceiverWithDependency, int>();
 
-                listener.Subscribe<int>(builder.Build());
+                using (var container = builder.Build())
+                { 
+                    listener.Subscribe<int>(container);
 
-                var waiter = new ReceiveAsync<int>();
-                listener.Subscribe(waiter);
+                    var waiter = new ReceiveAsync<int>();
+                    listener.Subscribe(waiter);
 
-                // Act
-                sender.Publish(3);
-                await waiter.WithTimeout();
+                    // Act
+                    sender.Publish(3);
+                    await waiter.WithTimeout();
 
-                // Assert
-                repository.VerifyAll();
+                    // Assert
+                    repository.VerifyAll();
+                }
             }
         }
 

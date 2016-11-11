@@ -56,27 +56,35 @@ namespace rabbitmq_demo
 
             Subscribe<TContract>(builder.Build());
         }
-       
+
         public void Subscribe<TContract>(IContainer container)
         {
+            ValidateServiceRegistration<TContract>(container);
+
             var routingkey = typeof(TContract).Name;
+            var queueName = channel.QueueDeclare().QueueName;
+            channel.QueueBind(queue: queueName,
+                          exchange: _exchange,
+                          routingKey: routingkey);
+
+            var handler = new MessageReceivedHandle<TContract>(container);
+            handler.Received += Received;
+
+            var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += handler.Handle;
+
+
+            channel.BasicConsume(queue: queueName,
+                             noAck: true,
+                             consumer: consumer);
+
+        }
+
+        private static void ValidateServiceRegistration<TContract>(IContainer container)
+        {
             using (var scope = container.BeginLifetimeScope())
             {
-                var queueName = channel.QueueDeclare().QueueName;
-                channel.QueueBind(queue: queueName,
-                              exchange: _exchange,
-                              routingKey: routingkey);
-
-                var handler = new MessageReceivedHandle<TContract>(container);
-                handler.Received += Received;
-
-                var consumer = new EventingBasicConsumer(channel);
-                consumer.Received += handler.Handle;
-
-
-                channel.BasicConsume(queue: queueName,
-                                 noAck: true,
-                                 consumer: consumer);
+                scope.Resolve<IReceive<TContract>>();
             }
         }
 

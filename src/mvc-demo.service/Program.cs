@@ -20,11 +20,10 @@ namespace mvc_demo.service
                     new DbContextOptionsBuilder<FrontEndContext>()
                     .UseSqlServer(@"Server=.\SQLEXPRESS;Database=mvc-demo;Trusted_Connection=true")
                     .Options))
-            .As<IFrontEndContext>();
+                .As<IFrontEndContext>();
 
             builder
-                .RegisterType<FrontEndService>()
-                .As<IReceive<PersonCreated>>();
+                .RegisterReceiverFor<FrontEndService, PersonCreated>();
 
             using (var listener = new Listener(new ConnectionFactory { HostName = "localhost", UserName = "guest", Password = "guest" }, "mvc-demo"))
             using (var container = builder.Build())
