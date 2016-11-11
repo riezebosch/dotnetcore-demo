@@ -5,6 +5,7 @@ using RabbitMQ.Client.Events;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 
@@ -55,18 +56,42 @@ namespace rabbitmq_demo
 
             Subscribe<TContract>(builder.Build());
         }
-
+       
         public void Subscribe<TContract>(IContainer container)
         {
             var routingkey = typeof(TContract).Name;
-
-            var queueName = channel.QueueDeclare().QueueName;
-            channel.QueueBind(queue: queueName,
+            using (var scope = container.BeginLifetimeScope())
+            {
+                var queueName = channel.QueueDeclare().QueueName;
+                channel.QueueBind(queue: queueName,
                               exchange: _exchange,
                               routingKey: routingkey);
 
-            var consumer = new EventingBasicConsumer(channel);
-            consumer.Received += (model, ea) =>
+                var handler = new MessageReceivedHandle<TContract>(container);
+                handler.Received += Received;
+
+                var consumer = new EventingBasicConsumer(channel);
+                consumer.Received += handler.Handle;
+
+
+                channel.BasicConsume(queue: queueName,
+                                 noAck: true,
+                                 consumer: consumer);
+            }
+        }
+
+        internal class MessageReceivedHandle<TContract>
+        {
+            private readonly IContainer container;
+
+            public event EventHandler<ReceivedEventArgs> Received;
+
+            public MessageReceivedHandle(IContainer container)
+            {
+                this.container = container;
+            }
+
+            public void Handle(object sender, BasicDeliverEventArgs ea)
             {
                 using (var scope = container.BeginLifetimeScope())
                 {
@@ -76,17 +101,14 @@ namespace rabbitmq_demo
                     Received?.Invoke(this, new ReceivedEventArgs
                     {
                         HandledBy = receiver.GetType(),
-                        Topic = routingkey,
+                        Topic = typeof(TContract).Name,
                         Message = content
                     });
 
-                    receiver.Execute(JsonConvert.DeserializeObject<TContract>(content));
+                    var item = JsonConvert.DeserializeObject<TContract>(content);
+                    receiver.Execute(item);
                 }
-            };
-
-            channel.BasicConsume(queue: queueName,
-                             noAck: true,
-                             consumer: consumer);
+            }
         }
     }
 }

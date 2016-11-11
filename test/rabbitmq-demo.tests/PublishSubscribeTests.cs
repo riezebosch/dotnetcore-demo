@@ -367,12 +367,12 @@ namespace rabbitmq_demo.tests
             using (var listener = new Listener())
             using (var sender = new Sender())
             {
-                var mock = new Mock<IDependency>();
-                mock.Setup(m => m.Foo());
+                var dependency = new Mock<IDependency>();
+                dependency.Setup(m => m.Foo());
 
                 var builder = new ContainerBuilder();
                 builder
-                    .RegisterInstance(mock.Object);
+                    .RegisterInstance(dependency.Object);
                 builder
                     .RegisterType<ReceiverWithDependency>()
                     .As<IReceive<int>>();
@@ -387,7 +387,7 @@ namespace rabbitmq_demo.tests
                 await waiter.WithTimeout();
 
                 // Assert
-                mock.Verify(m => m.Foo(), Times.Once);
+                dependency.Verify(m => m.Foo(), Times.Once);
             }
         }
 
@@ -403,14 +403,14 @@ namespace rabbitmq_demo.tests
                 var builder = new ContainerBuilder();
                 builder.Register(c =>
                 {
-                    var mock = repository.Create<IDependency>();
-                    mock.Setup(x => x.Foo())
+                    var dependency = repository.Create<IDependency>();
+                    dependency.Setup(x => x.Foo())
                         .Verifiable();
-                    mock.As<IDisposable>()
+                    dependency.As<IDisposable>()
                         .Setup(x => x.Dispose())
                         .Verifiable();
 
-                    return mock.Object;
+                    return dependency.Object;
                 });
 
                 builder
