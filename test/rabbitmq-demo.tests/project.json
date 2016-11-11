@@ -9,8 +9,8 @@
     "RabbitMQ.Client": "4.1.1-rc1",
     "ef-demo": "1.0.0-*",
     "Newtonsoft.Json": "9.0.1",
-    "Moq": "4.6.38-alpha",
-    "Autofac": "4.2.0"
+    "Autofac": "4.2.0",
+    "NSubstitute": "2.0.0-rc"
   },
 
   "frameworks": {

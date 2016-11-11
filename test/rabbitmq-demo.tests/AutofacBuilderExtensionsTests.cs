@@ -1,14 +1,10 @@
 ﻿using Autofac;
-using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
+using NSubstitute;
 
 namespace rabbitmq_demo.tests
 {
-    
+
     public class AutofacBuilderExtensionsTests
     {
         [Fact]
@@ -16,8 +12,8 @@ namespace rabbitmq_demo.tests
         {
             var builder = new ContainerBuilder();
             {
-                var dependency = new Mock<IDependency>();
-                builder.RegisterInstance(dependency.Object);
+                var dependency = Substitute.For<IDependency>();
+                builder.RegisterInstance(dependency);
 
                 builder.RegisterReceiverFor<ReceiverWithDependency, int>();
                 var container = builder.Build();

@@ -2,219 +2,44 @@
 using Autofac.Core;
 using Autofac.Core.Registration;
 using NSubstitute;
-using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace rabbitmq_demo.tests
 {
-    public class PublishSubscribeTests
+    public class ReceiverAsyncTests
     {
         [Fact]
-        public async Task PublishMessageShouldBeReceivedBySubsriber()
+        public async Task WaitForResult()
         {
-            // Arrange
-            var input = new Person { FirstName = "Test", LastName = "Man" };
-
             using (var listener = new Listener())
+            using (var sender = new Sender())
             {
-                var service = Substitute.For<IReceive<Person>>();
+                var receiver = new ReceiveAsync<int>();
+                listener.Subscribe(receiver);
 
-                // Act
-                listener
-                    .Subscribe(service);
+                sender.Publish(3);
 
-                var waiter = new ReceiveAsync<Person>();
-                listener.Subscribe(waiter);
-
-                using (var sender = new Sender())
-                {
-                    sender.Publish(input);
-                }
-
-                // Assert
-                await waiter.WithTimeout();
-                service
-                    .Received()
-                    .Execute(Arg.Is<Person>(p =>
-                        p.FirstName == input.FirstName
-                        && p.LastName == input.LastName));
+                var result = await receiver;
+                Assert.Equal(3, result);
             }
         }
 
         [Fact]
-        public async Task ConnectWithCredentials()
+        public async Task WaitForResultWithTimeoutThrowsException()
         {
-            // Arrange
-            var input = new Person { FirstName = "Test", LastName = "Man" };
-            var connection = new ConnectionFactory
-            {
-                HostName = "localhost",
-                UserName = "guest",
-                Password = "guest"
-            };
-
-            using (var listener = new Listener(connection, "demo"))
-            {
-                var waiter = new ReceiveAsync<Person>();
-                listener.Subscribe(waiter);
-
-                // Act
-                using (var sender = new Sender(connection, "demo"))
-                {
-                    sender.Publish(input);
-                }
-
-                // Assert
-                await waiter.WithTimeout();
-            }
-        }
-
-
-        [Fact]
-        public void SubsequentMessageShouldBeReceivedBySubscriber()
-        {
-            using (var wait = new CountdownEvent(2))
             using (var listener = new Listener())
+            using (var sender = new Sender())
             {
-                var service = Substitute.For<IReceive<Person>>();
-                service
-                    .When(m => m.Execute(Arg.Is<Person>(p => p.FirstName == "first")))
-                    .Do(c => wait.Signal());
+                var receiver = new ReceiveAsync<int>();
+                listener.Subscribe(receiver);
 
-                service
-                    .When(m => m.Execute(Arg.Is<Person>(p => p.FirstName == "second")))
-                    .Do(c => wait.Signal());
-
-                listener.Subscribe(service);
-
-                using (var sender = new Sender())
-                {
-                    sender.Publish(new Person { FirstName = "first" });
-                    sender.Publish(new Person { FirstName = "second" });
-                }
-
-                Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
-                service.Received(2).Execute(Arg.Any<Person>());
+                await Assert.ThrowsAsync<TimeoutException>(() => receiver.WithTimeout(TimeSpan.FromSeconds(1)));
             }
         }
-
-        [Fact]
-        public void TwoListenersBothReceiveMessageAfterPublish()
-        {
-            using (var wait = new CountdownEvent(2))
-            using (var listener1 = new Listener())
-            using (var listener2 = new Listener())
-            {
-                var service = Substitute.For<IReceive<Person>>();
-                service
-                    .When(m => m.Execute(Arg.Any<Person>()))
-                    .Do(c => wait.Signal());
-
-                listener1.Subscribe(service);
-                listener2.Subscribe(service);
-
-                using (var sender = new Sender())
-                {
-                    sender.Publish(new Person { FirstName = "first" });
-                }
-
-                Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
-                service.Received(2).Execute(Arg.Any<Person>());
-            }
-        }
-
-        [Fact]
-        public void OneListenerReceivesTwoMessagesOfDifferentType()
-        {
-            using (var wait = new CountdownEvent(2))
-            using (var listener = new Listener())
-            {
-                var service1 = Substitute.For<IReceive<Person>>();
-                service1
-                    .When(m => m.Execute(Arg.Any<Person>()))
-                    .Do(c => wait.Signal());
-
-                var service2 = Substitute.For<IReceive<Person>>();
-                service2
-                    .When(m => m.Execute(Arg.Any<Person>()))
-                    .Do(c => wait.Signal());
-
-                listener.Subscribe(service1);
-                listener.Subscribe(service2);
-
-                using (var sender = new Sender())
-                {
-                    sender.Publish(new Person { FirstName = "first" });
-                    sender.Publish("just simple text");
-                }
-
-                Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
-                service1.Received(1).Execute(Arg.Any<Person>());
-                service2.Received(1).Execute(Arg.Any<Person>());
-            }
-        }
-
-        [Fact]
-        public async Task SendAndReceiveShouldNotDependOnClrTypes()
-        {
-            // Arrange
-            var input = new ef_demo.Person { FirstName = "Test", LastName = "Man" };
-
-            using (var listener = new Listener())
-            {
-                var service = Substitute.For<IReceive<Person>>();
-                listener.Subscribe(service);
-
-                var waiter = new ReceiveAsync<Person>();
-                listener.Subscribe(waiter);
-
-                // Act
-                using (var sender = new Sender())
-                {
-                    sender.Publish(input);
-                }
-
-                // Assert
-                await waiter.WithTimeout();
-                service
-                    .Received(1)
-                    .Execute(Arg.Is<Person>(other =>
-                        other.FirstName == input.FirstName
-                        && other.LastName == input.LastName));
-            }
-        }
-
-        [Fact]
-        public async Task SendAndReceiveShouldDependOnClassName()
-        {
-            // Arrange
-            var input = new Person { FirstName = "Test", LastName = "Man" };
-
-            using (var listener = new Listener())
-            using (var wait = new ManualResetEvent(false))
-            {
-                var mock = Substitute.For<IReceive<SomethingUnrelated>>();
-                listener.Subscribe(mock);
-
-                var waiter = new ReceiveAsync<Person>();
-                listener.Subscribe(waiter);
-
-                // Act
-                using (var sender = new Sender())
-                {
-                    sender.Publish(input);
-                }
-
-                // Assert
-                await waiter.WithTimeout();
-                mock.DidNotReceive().Execute(Arg.Any<SomethingUnrelated>());
-            }
-        }    
 
         [Fact]  
         public async Task ListenerRaisesEvent()
@@ -248,7 +73,10 @@ namespace rabbitmq_demo.tests
             using (var listener = new Listener())
             using (var sender = new Sender())
             {
+                //var service = new Mock<IReceive<int>>();
                 var service = Substitute.For<IReceive<int>>();
+                
+                //service.Setup(m => m.Execute(3)).Verifiable();
                 listener
                     .Subscribe(() => service);
 
