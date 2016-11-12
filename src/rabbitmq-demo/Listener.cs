@@ -11,34 +11,16 @@ using System.Threading;
 
 namespace rabbitmq_demo
 {
-    public class Listener : IDisposable
+    public class Listener : ChannelBase
     {
-        private readonly string _exchange;
-
-        IConnection connection;
-        IModel channel;
-
         public event EventHandler<ReceivedEventArgs> Received;
 
-        public Listener(string exchange = "demo")
-            : this(new ConnectionFactory() { HostName = "localhost" },
-                  exchange)
+        public Listener() : base()
         {
         }
 
-        public Listener(IConnectionFactory factory, string exchange)
+        public Listener(IConnectionFactory factory, string exchange) : base(factory, exchange)
         {
-            _exchange = exchange;
-
-            connection = factory.CreateConnection();
-            channel = connection.CreateModel();
-            channel.ExchangeDeclare(exchange: _exchange, type: ExchangeType.Topic);
-        }
-
-        public void Dispose()
-        {
-            connection.Dispose();
-            channel.Dispose();
         }
 
         public void Subscribe<TContract>(Func<IReceive<TContract>> factory)
@@ -62,9 +44,9 @@ namespace rabbitmq_demo
             ValidateReceiverRegistration<TContract>(container);
 
             var routingkey = typeof(TContract).Name;
-            var queueName = channel.QueueDeclare().QueueName;
-            channel.QueueBind(queue: queueName,
-                          exchange: _exchange,
+            var queueName = Channel.QueueDeclare().QueueName;
+            Channel.QueueBind(queue: queueName,
+                          exchange: Exchange,
                           routingKey: routingkey);
 
             var handler = new MessageReceivedHandler<TContract>(
@@ -76,13 +58,12 @@ namespace rabbitmq_demo
                     Message = m
                 }));
 
-            var consumer = new EventingBasicConsumer(channel);
+            var consumer = new EventingBasicConsumer(Channel);
             consumer.Received += handler.Handle;
 
-            channel.BasicConsume(queue: queueName,
+            Channel.BasicConsume(queue: queueName,
                              noAck: true,
                              consumer: consumer);
-
         }
 
         private static void ValidateReceiverRegistration<TContract>(IContainer container)
@@ -91,6 +72,11 @@ namespace rabbitmq_demo
             {
                 scope.Resolve<IReceive<TContract>>();
             }
+        }
+
+        public ISender Sender()
+        {
+            return new Sender(new ConnectionFactory(), Exchange);
         }
     }
 }

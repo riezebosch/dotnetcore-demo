@@ -7,13 +7,16 @@ namespace Controllers
 {
     public class PeopleController : Controller
     {
+        private readonly ISender _sender;
+
+        public PeopleController(ISender sender)
+        {
+            this._sender = sender;
+        }
         [HttpPost]
         public ActionResult Create([FromBody]CreatePerson data)
         {
-            using (var sender = new Sender())
-            {
-                sender.Publish(data);
-            }
+            _sender.Publish(data);
             return RedirectToAction("Index");
         }
 

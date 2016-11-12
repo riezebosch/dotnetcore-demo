@@ -15,6 +15,8 @@ using System.Net;
 using System.Net.Http;
 using Newtonsoft.Json;
 using System.Text;
+using NSubstitute;
+using RabbitMQ.Client;
 
 namespace mvc_demo.tests
 {
@@ -24,13 +26,14 @@ namespace mvc_demo.tests
         public async Task AddPersonPublishesPersonCreatedCommand()
         {
             using (var listener = new Listener())
+            using (var sender = listener.Sender())
             {
-                var controller = new PeopleController();
+                var controller = new PeopleController(sender);
                 var receiver = new ReceiveAsync<CreatePerson>();
                 listener.Subscribe(receiver);
 
                 controller.Create(new CreatePerson { FirstName = "first", LastName = "last" });
-                var command = await receiver.WithTimeout(); 
+                var command = await receiver.WithTimeout();
 
                 Assert.NotNull(command);
                 Assert.Equal("first", command.FirstName);
@@ -41,7 +44,7 @@ namespace mvc_demo.tests
         [Fact]
         public void AddPersonRedirectsToIndex()
         {
-            var controller = new PeopleController();
+            var controller = new PeopleController(Substitute.For<ISender>());
             var result = Assert.IsType<RedirectToActionResult>(controller.Create(new CreatePerson { FirstName = "first", LastName = "last" }));
 
             Assert.Equal("Index", result.ActionName);
@@ -63,13 +66,13 @@ namespace mvc_demo.tests
         {
             using (var server = StartTestServer())
             using (var client = server.CreateClient())
-            using (var listener = new Listener())
+            using (var listener = new Listener(new ConnectionFactory(), "mvc-demo"))
             {
                 var receiver = new ReceiveAsync<CreatePerson>();
                 listener.Subscribe(receiver);
 
                 var result = client.PostAsync("People/Create", new StringContent(JsonConvert.SerializeObject(new { FirstName = "first", LastName = "last" }), Encoding.UTF8, "application/json")).Result;
-                var command = await receiver;
+                var command = await receiver.WithTimeout();
 
                 Assert.Equal(HttpStatusCode.Redirect, result.StatusCode);
                 Assert.Equal("first", command.FirstName);

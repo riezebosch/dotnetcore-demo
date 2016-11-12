@@ -7,7 +7,8 @@
     "dotnet-test-xunit": "2.2.0-preview2-build1029",
     "mvc-demo": "1.0.0-*",
     "rabbitmq-demo": "1.*",
-    "Microsoft.AspNetCore.TestHost": "1.0.0"
+    "Microsoft.AspNetCore.TestHost": "1.0.0",
+    "NSubstitute":  "2.0.0-rc"
   },
 
   "frameworks": {

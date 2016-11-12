@@ -10,6 +10,8 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using mvc_demo.Services;
+using rabbitmq_demo;
+using RabbitMQ.Client;
 
 namespace mvc_demo
 {
@@ -38,6 +40,7 @@ namespace mvc_demo
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc();
+            services.AddScoped<ISender>(p => new Sender(new ConnectionFactory(), "mvc-demo"));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
