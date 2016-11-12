@@ -10,7 +10,8 @@
     "ef-demo": "1.0.0-*",
     "Newtonsoft.Json": "9.0.1",
     "Autofac": "4.2.0",
-    "NSubstitute": "2.0.0-rc"
+    "NSubstitute": "2.0.0-rc",
+    "Microsoft.CodeCoverage": "1.0.2"
   },
 
   "frameworks": {
