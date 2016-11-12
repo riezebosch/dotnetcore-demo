@@ -214,9 +214,9 @@ namespace rabbitmq_demo.tests
                 await waiter.WithTimeout();
                 mock.DidNotReceive().Execute(Arg.Any<SomethingUnrelated>());
             }
-        }    
+        }
 
-        [Fact]  
+        [Fact]
         public async Task ListenerRaisesEvent()
         {
             // Arrange
@@ -242,116 +242,71 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public async Task ListenerUsesFactoryToCreateInstances()
+        public void ListenerUsesFactoryToCreateInstances()
         {
             // Arrange
             using (var listener = new Listener())
-            using (var sender = new Sender())
             {
-                var service = Substitute.For<IReceive<int>>();
-                listener
-                    .Subscribe(() => service);
-
-                var waiter = new ReceiveAsync<int>();
-                listener.Subscribe(waiter);
+                Func<IReceive<int>> factory = Substitute.For<Func<IReceive<int>>>();
 
                 // Act
-                sender.Publish(3);
-                await waiter.WithTimeout();
+                listener
+                    .Subscribe(factory);
 
                 // Assert
-                service.Received().Execute(3);
+                factory.Received().Invoke();
             }
         }
 
         [Fact]
-        public async Task ListenerDoesNotDisposeInstanceSubscribedReceivers()
+        public void ListenerDoesNotDisposeInstanceSubscribedReceivers()
         {
             // Arrange
             using (var listener = new Listener())
-            using (var sender = new Sender())
             {
                 var service = Substitute.For<IReceive<int>, IDisposable>();
+
+                // Act
                 listener
                     .Subscribe(service);
 
-                var waiter = new ReceiveAsync<int>();
-                listener.Subscribe(waiter);
-                
-                // Act
-                sender.Publish(3);
-                await waiter.WithTimeout();
-
+                // Assert
                 ((IDisposable)service).DidNotReceive().Dispose();
             }
         }
 
         [Fact]
-        public async Task ListenerDisposesFactoryCreatedReceivers()
+        public void ListenerDisposesFactoryCreatedReceivers()
         {
             // Arrange
             using (var listener = new Listener())
             using (var sender = new Sender())
             {
                 var service = Substitute.For<IReceive<int>, IDisposable>();
-                listener.Subscribe(() => service);
-
-                var waiter = new ReceiveAsync<int>();
-                listener.Subscribe(waiter);
 
                 // Act
-                sender.Publish(3);
-                await waiter.WithTimeout();
+                listener.Subscribe(() => service);
 
                 // Assert
-                ((IDisposable)service).Received(2).Dispose();
+                ((IDisposable)service).Received(1).Dispose();
             }
         }
 
-        [Fact]
-        public async Task ListenerResolvesDependenciesToCreateInstances()
-        {
-            // Arrange
-            using (var listener = new Listener())
-            using (var sender = new Sender())
-            {
-                var dependency = Substitute.For<IDependency>();
-                var builder = new ContainerBuilder();
-                builder
-                    .RegisterInstance(dependency);
-                builder
-                    .RegisterReceiverFor<ReceiverWithDependency, int>();
-
-                using (var container = builder.Build())
-                {
-                    listener.Subscribe<int>(container);
-
-                    var waiter = new ReceiveAsync<int>();
-                    listener.Subscribe(waiter);
-
-                    // Act
-                    sender.Publish(3);
-                    await waiter.WithTimeout();
-
-                    // Assert
-                    dependency.Received(1).Foo();
-                }
-            }
-        }
+        
 
         [Fact]
         public void ListenerThrowsExceptionWhenReceiverForContractIsNotResolved()
         {
             // Arrange
             using (var listener = new Listener())
-            using (var sender = new Sender())
             {
                 var builder = new ContainerBuilder();
                 builder
                     .RegisterType<ReceiverWithDependency>();
 
                 // Act && Assert
-                Assert.Throws<ComponentNotRegisteredException>(() => listener.Subscribe<int>(builder.Build()));
+                Assert.Throws<ComponentNotRegisteredException>(
+                    () => listener.Subscribe<int>(builder.Build()));
             }
         }
 
@@ -372,11 +327,10 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public async Task ListenerDisposesDependenciesResolvedToCreateInstances()
+        public void ListenerDisposesDependenciesResolvedToCreateInstances()
         {
             // Arrange
             using (var listener = new Listener())
-            using (var sender = new Sender())
             {
                 var dependency = Substitute.For<IDependency, IDisposable>();
 
@@ -387,18 +341,12 @@ namespace rabbitmq_demo.tests
                     .RegisterReceiverFor<ReceiverWithDependency, int>();
 
                 using (var container = builder.Build())
-                { 
+                {
+                    // Act
                     listener.Subscribe<int>(container);
 
-                    var waiter = new ReceiveAsync<int>();
-                    listener.Subscribe(waiter);
-
-                    // Act
-                    sender.Publish(3);
-                    await waiter.WithTimeout();
-
                     // Assert
-                    ((IDisposable)dependency).Received(2).Dispose();
+                    ((IDisposable)dependency).Received(1).Dispose();
                 }
             }
         }

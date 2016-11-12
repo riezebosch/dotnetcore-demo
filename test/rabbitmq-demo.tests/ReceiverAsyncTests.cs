@@ -115,24 +115,18 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public async Task ListenerDisposesFactoryCreatedReceivers()
+        public void ListenerDisposesFactoryCreatedReceivers()
         {
             // Arrange
             using (var listener = new Listener())
-            using (var sender = new Sender())
             {
                 var service = Substitute.For<IReceive<int>, IDisposable>();
-                listener.Subscribe(() => service);
-
-                var waiter = new ReceiveAsync<int>();
-                listener.Subscribe(waiter);
 
                 // Act
-                sender.Publish(3);
-                await waiter.WithTimeout();
+                listener.Subscribe(() => service);
 
                 // Assert
-                ((IDisposable)service).Received(2).Dispose();
+                ((IDisposable)service).Received(1).Dispose();
             }
         }
 
@@ -200,11 +194,10 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public async Task ListenerDisposesDependenciesResolvedToCreateInstances()
+        public void ListenerDisposesDependenciesResolvedToCreateInstances()
         {
             // Arrange
             using (var listener = new Listener())
-            using (var sender = new Sender())
             {
                 var dependency = Substitute.For<IDependency, IDisposable>();
 
@@ -215,18 +208,12 @@ namespace rabbitmq_demo.tests
                     .RegisterReceiverFor<ReceiverWithDependency, int>();
 
                 using (var container = builder.Build())
-                { 
+                {
+                    // Act
                     listener.Subscribe<int>(container);
 
-                    var waiter = new ReceiveAsync<int>();
-                    listener.Subscribe(waiter);
-
-                    // Act
-                    sender.Publish(3);
-                    await waiter.WithTimeout();
-
                     // Assert
-                    ((IDisposable)dependency).Received(2).Dispose();
+                    ((IDisposable)dependency).Received(1).Dispose();
                 }
             }
         }

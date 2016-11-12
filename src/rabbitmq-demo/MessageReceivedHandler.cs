@@ -27,11 +27,10 @@ namespace rabbitmq_demo
             using (var scope = container.BeginLifetimeScope())
             {
                 var receiver = scope.Resolve<IReceive<TContract>>();
-                var content = Encoding.UTF8.GetString(ea.Body);
+                var content = ea.Body.ToContent();
 
                 received(receiver.GetType(), content);
-                var item = JsonConvert.DeserializeObject<TContract>(content);
-                receiver.Execute(item);
+                receiver.Execute(content.ToObject<TContract>());
             }
         }
     }

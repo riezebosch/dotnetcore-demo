@@ -36,14 +36,13 @@ namespace rabbitmq_demo
         {
             var routingKey = typeof(T).Name;
 
-            var message = JsonConvert.SerializeObject(input);
+            var message = input.ToMessage();
             Send?.Invoke(this, new SendEventArgs { Topic = routingKey, Message = message });
 
-            var body = Encoding.UTF8.GetBytes(message);
             _channel.BasicPublish(exchange: _exchange,
                                  routingKey: routingKey,
                                  basicProperties: null,
-                                 body: body);
+                                 body: message.ToBody());
         }
 
         public void Dispose()
