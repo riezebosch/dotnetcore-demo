@@ -68,5 +68,55 @@ namespace rabbitmq_demo.tests
                 }
             }
         }
+
+        [Fact]
+        public void ListenerUsesFactoryToCreateInstances()
+        {
+            // Arrange
+            using (var listener = new TestListener())
+            {
+                Func<IReceive<int>> factory = Substitute.For<Func<IReceive<int>>>();
+
+                // Act
+                listener
+                    .Subscribe(factory);
+
+                // Assert
+                factory.Received().Invoke();
+            }
+        }
+
+        [Fact]
+        public void ListenerDoesNotDisposeInstanceSubscribedReceivers()
+        {
+            // Arrange
+            using (var listener = new TestListener())
+            {
+                var service = Substitute.For<IReceive<int>, IDisposable>();
+
+                // Act
+                listener
+                    .Subscribe(service);
+
+                // Assert
+                ((IDisposable)service).DidNotReceive().Dispose();
+            }
+        }
+
+        [Fact]
+        public void ListenerDisposesFactoryCreatedReceivers()
+        {
+            // Arrange
+            using (var listener = new TestListener())
+            {
+                var service = Substitute.For<IReceive<int>, IDisposable>();
+
+                // Act
+                listener.Subscribe(() => service);
+
+                // Assert
+                ((IDisposable)service).Received(1).Dispose();
+            }
+        }
     }
 }
