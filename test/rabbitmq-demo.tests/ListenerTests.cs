@@ -18,8 +18,7 @@ namespace rabbitmq_demo.tests
         public void ListenerThrowsExceptionWhenReceiverForContractIsNotResolved()
         {
             // Arrange
-            using (var listener = new Listener())
-            using (var sender = new Sender())
+            using (var listener = new Listener(Substitute.For<IConnectionFactory>(), "dummy"))
             {
                 var builder = new ContainerBuilder();
                 builder
@@ -34,8 +33,7 @@ namespace rabbitmq_demo.tests
         public void ListenerThrowsExceptionWhenDependencyForReceiverIsNotResolved()
         {
             // Arrange
-            using (var listener = new Listener())
-            using (var sender = new Sender())
+            using (var listener = new Listener(Substitute.For<IConnectionFactory>(), "dummy"))
             {
                 var builder = new ContainerBuilder();
                 builder
@@ -50,7 +48,7 @@ namespace rabbitmq_demo.tests
         public void ListenerDisposesDependenciesResolvedToCreateInstances()
         {
             // Arrange
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             {
                 var dependency = Substitute.For<IDependency, IDisposable>();
 

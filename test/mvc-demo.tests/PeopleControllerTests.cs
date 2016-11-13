@@ -25,7 +25,7 @@ namespace mvc_demo.tests
         [Fact]
         public async Task AddPersonPublishesPersonCreatedCommand()
         {
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             using (var sender = listener.Sender())
             {
                 var controller = new PeopleController(sender);

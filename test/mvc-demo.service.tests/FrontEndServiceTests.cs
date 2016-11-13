@@ -91,7 +91,7 @@ namespace mvc_demo.service.tests
                 context.Database.EnsureDeleted();
                 context.Database.EnsureCreated();
 
-                using (var sender = new Sender())
+                using (var sender = new TestSender())
                 using (var receiver = sender.Listener())
                 {
                     // Act

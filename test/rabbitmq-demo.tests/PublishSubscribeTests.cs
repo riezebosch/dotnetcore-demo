@@ -18,9 +18,7 @@ namespace rabbitmq_demo.tests
         public async Task PublishMessageShouldBeReceivedBySubsriber()
         {
             // Arrange
-            var input = new Person { FirstName = "Test", LastName = "Man" };
-
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             {
                 var service = Substitute.For<IReceive<Person>>();
 
@@ -31,6 +29,7 @@ namespace rabbitmq_demo.tests
                 var waiter = new ReceiveAsync<Person>();
                 listener.Subscribe(waiter);
 
+                var input = new Person { FirstName = "Test", LastName = "Man" };
                 using (var sender = listener.Sender())
                 {
                     sender.Publish(input);
@@ -79,7 +78,7 @@ namespace rabbitmq_demo.tests
         public void SubsequentMessageShouldBeReceivedBySubscriber()
         {
             using (var wait = new CountdownEvent(2))
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             {
                 var service = Substitute.For<IReceive<Person>>();
                 service
@@ -107,7 +106,7 @@ namespace rabbitmq_demo.tests
         public void TwoListenersBothReceiveMessageAfterPublish()
         {
             using (var wait = new CountdownEvent(2))
-            using (var sender = new Sender())
+            using (var sender = new TestSender())
             using (var listener1 = sender.Listener())
             using (var listener2 = sender.Listener())
             {
@@ -132,7 +131,7 @@ namespace rabbitmq_demo.tests
         public void OneListenerReceivesTwoMessagesOfDifferentType()
         {
             using (var wait = new CountdownEvent(2))
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             {
                 var service1 = Substitute.For<IReceive<Person>>();
                 service1
@@ -165,7 +164,7 @@ namespace rabbitmq_demo.tests
             // Arrange
             var input = new ef_demo.Person { FirstName = "Test", LastName = "Man" };
 
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             {
                 var service = Substitute.For<IReceive<Person>>();
                 listener.Subscribe(service);
@@ -195,7 +194,7 @@ namespace rabbitmq_demo.tests
             // Arrange
             var input = new Person { FirstName = "Test", LastName = "Man" };
 
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             using (var wait = new ManualResetEvent(false))
             {
                 var mock = Substitute.For<IReceive<SomethingUnrelated>>();
@@ -220,7 +219,7 @@ namespace rabbitmq_demo.tests
         public async Task ListenerRaisesEvent()
         {
             // Arrange
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             using (var sender = listener.Sender())
             {
                 var messages = new List<ReceivedEventArgs>();
@@ -245,7 +244,7 @@ namespace rabbitmq_demo.tests
         public void ListenerUsesFactoryToCreateInstances()
         {
             // Arrange
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             {
                 Func<IReceive<int>> factory = Substitute.For<Func<IReceive<int>>>();
 
@@ -262,7 +261,7 @@ namespace rabbitmq_demo.tests
         public void ListenerDoesNotDisposeInstanceSubscribedReceivers()
         {
             // Arrange
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             {
                 var service = Substitute.For<IReceive<int>, IDisposable>();
 
@@ -279,8 +278,7 @@ namespace rabbitmq_demo.tests
         public void ListenerDisposesFactoryCreatedReceivers()
         {
             // Arrange
-            using (var listener = new Listener())
-            using (var sender = new Sender())
+            using (var listener = new TestListener())
             {
                 var service = Substitute.For<IReceive<int>, IDisposable>();
 
@@ -298,7 +296,7 @@ namespace rabbitmq_demo.tests
         public void ListenerThrowsExceptionWhenReceiverForContractIsNotResolved()
         {
             // Arrange
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             {
                 var builder = new ContainerBuilder();
                 builder
@@ -314,8 +312,7 @@ namespace rabbitmq_demo.tests
         public void ListenerThrowsExceptionWhenDependencyForReceiverIsNotResolved()
         {
             // Arrange
-            using (var listener = new Listener())
-            using (var sender = new Sender())
+            using (var listener = new TestListener())
             {
                 var builder = new ContainerBuilder();
                 builder
@@ -330,7 +327,7 @@ namespace rabbitmq_demo.tests
         public void ListenerDisposesDependenciesResolvedToCreateInstances()
         {
             // Arrange
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             {
                 var dependency = Substitute.For<IDependency, IDisposable>();
 
@@ -355,7 +352,7 @@ namespace rabbitmq_demo.tests
         public async Task ListenerResolvesDependenciesToCreateInstances()
         {
             // Arrange
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             using (var sender = listener.Sender())
             {
                 var dependency = Substitute.For<IDependency>();
@@ -385,8 +382,8 @@ namespace rabbitmq_demo.tests
         [Fact]
         public void TestSenderIsSpecificForReceiver()
         {
-            using (var listener1 = new Listener())
-            using (var listener2 = new Listener())
+            using (var listener1 = new TestListener())
+            using (var listener2 = new TestListener())
             {
                 var service1 = Substitute.For<IReceive<int>>();
                 var service2 = Substitute.For<IReceive<int>>();
@@ -412,8 +409,8 @@ namespace rabbitmq_demo.tests
         [Fact]
         public async Task TestReceiverIsSpecificForSender()
         {
-            using (var sender1 = new Sender())
-            using (var sender2 = new Sender())
+            using (var sender1 = new TestSender())
+            using (var sender2 = new TestSender())
             using (var listener1 = sender1.Listener())
             using (var listener2 = sender2.Listener())
             {
@@ -434,8 +431,8 @@ namespace rabbitmq_demo.tests
         [Fact]
         public void SenderRaisesEvent()
         {
-            using (var sender = new Sender())
-            using (var listener = new Listener())
+            using (var sender = new TestSender())
+            using (var listener = sender.Listener())
             {
                 var message = string.Empty;
                 sender.Send += (o, e) => message = e.Message;

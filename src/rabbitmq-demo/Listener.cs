@@ -15,11 +15,8 @@ namespace rabbitmq_demo
     {
         public event EventHandler<ReceivedEventArgs> Received;
 
-        public Listener() : base()
-        {
-        }
-
-        public Listener(IConnectionFactory factory, string exchange) : base(factory, exchange)
+        public Listener(IConnectionFactory factory, string exchange) 
+            : base(factory, exchange)
         {
         }
 
@@ -72,11 +69,6 @@ namespace rabbitmq_demo
             {
                 scope.Resolve<IReceive<TContract>>();
             }
-        }
-
-        public ISender Sender()
-        {
-            return new Sender(new ConnectionFactory(), Exchange);
         }
     }
 }

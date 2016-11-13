@@ -15,7 +15,7 @@ namespace rabbitmq_demo.tests
         [Fact]
         public async Task WaitForResult()
         {
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             using (var sender = listener.Sender())
             {
                 var receiver = new ReceiveAsync<int>();
@@ -31,7 +31,7 @@ namespace rabbitmq_demo.tests
         [Fact]
         public async Task WaitForResultWithTimeoutThrowsException()
         {
-            using (var listener = new Listener())
+            using (var listener = new TestListener())
             using (var sender = listener.Sender())
             {
                 var receiver = new ReceiveAsync<int>();

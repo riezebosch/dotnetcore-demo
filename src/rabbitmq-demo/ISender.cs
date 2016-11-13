@@ -2,7 +2,7 @@
 
 namespace rabbitmq_demo
 {
-    public interface ISender : IDisposable
+    public interface ISender
     {
         void Publish<T>(T personCreated);
     }

@@ -11,11 +11,8 @@ namespace rabbitmq_demo
     {
         public event EventHandler<SendEventArgs> Send;
 
-        public Sender() : base()
-        {
-        }
-
-        public Sender(IConnectionFactory factory, string exchange) : base(factory, exchange)
+        public Sender(IConnectionFactory factory, string exchange)
+            : base(factory, exchange)
         {
         }
 
@@ -30,11 +27,6 @@ namespace rabbitmq_demo
                                  routingKey: routingKey,
                                  basicProperties: null,
                                  body: message.ToBody());
-        }
-
-        public Listener Listener()
-        {
-            return new Listener(new ConnectionFactory(), Exchange);
         }
     }
 }
