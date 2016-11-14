@@ -287,7 +287,10 @@ namespace rabbitmq_demo.tests
                     .RegisterType<ReceiverWithDependency>();
 
                 // Act && Assert
-                Assert.Throws<ComponentNotRegisteredException>(() => listener.Subscribe<int>(builder.Build()));
+                using (var container = builder.Build())
+                {
+                    Assert.Throws<ComponentNotRegisteredException>(() => listener.Subscribe<int>(container));
+                }
             }
         }
 
@@ -302,7 +305,10 @@ namespace rabbitmq_demo.tests
                     .RegisterReceiverFor<ReceiverWithDependency, int>();
 
                 // Act && Assert
-                Assert.Throws<DependencyResolutionException>(() => listener.Subscribe<int>(builder.Build()));
+                using (var container = builder.Build())
+                {
+                    Assert.Throws<DependencyResolutionException>(() => listener.Subscribe<int>(container));
+                }
             }
         }
 
@@ -369,7 +375,7 @@ namespace rabbitmq_demo.tests
             // Arrange
             using (var listener = new TestListener())
             {
-                Func<IReceive<int>> factory = Substitute.For<Func<IReceive<int>>>();
+                var factory = Substitute.For<Func<IReceive<int>>>();
 
                 // Act
                 listener
@@ -422,6 +428,7 @@ namespace rabbitmq_demo.tests
             {
                 var service = Substitute.For<IReceive<int>, IDisposable>();
                 listener.Subscribe(() => service);
+                service.ClearReceivedCalls();
 
                 var waiter = new ReceiveAsync<int>();
                 listener.Subscribe(waiter);
@@ -436,7 +443,7 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public void TestSenderIsSpecificForReceiver()
+        public async Task TestSenderIsSpecificForReceiver()
         {
             using (var listener1 = new TestListener())
             using (var listener2 = new TestListener())
@@ -446,6 +453,12 @@ namespace rabbitmq_demo.tests
 
                 listener1.Subscribe(service1);
                 listener2.Subscribe(service2);
+
+                var awaiter1 = new ReceiveAsync<int>();
+                listener1.Subscribe(awaiter1);
+
+                var awaiter2 = new ReceiveAsync<int>();
+                listener2.Subscribe(awaiter2);
 
                 using (var sender = listener1.Sender())
                 {
@@ -457,7 +470,11 @@ namespace rabbitmq_demo.tests
                     sender.Publish(4);
                 }
 
+
+                await awaiter1.WithTimeout();
                 service1.Received(1).Execute(3);
+
+                await awaiter2.WithTimeout();
                 service2.Received(1).Execute(4);
             }
         }
