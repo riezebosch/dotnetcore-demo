@@ -15,7 +15,7 @@ namespace rabbitmq_demo
     {
         public event EventHandler<ReceivedEventArgs> Received;
 
-        public Listener(IConnectionFactory factory, string exchange) 
+        public Listener(IConnectionFactory factory, string exchange)
             : base(factory, exchange)
         {
         }
@@ -38,36 +38,49 @@ namespace rabbitmq_demo
 
         public void Subscribe<TContract>(IContainer container)
         {
-            ValidateReceiverRegistration<TContract>(container);
+            var receiverType = ResolveReceiverType<TContract>(container);
 
-            var routingkey = typeof(TContract).Name;
+            var routingKey = typeof(TContract).Name;
             var queueName = Channel.QueueDeclare().QueueName;
             Channel.QueueBind(queue: queueName,
                           exchange: Exchange,
-                          routingKey: routingkey);
-
-            var handler = new MessageReceivedHandler<TContract>(
-                container,
-                (c, m) => Received?.Invoke(this, new ReceivedEventArgs
-                {
-                    HandledBy = c,
-                    Topic = routingkey,
-                    Message = m
-                }));
+                          routingKey: routingKey);
 
             var consumer = new EventingBasicConsumer(Channel);
-            consumer.Received += handler.Handle;
+            consumer.Received += (o, e) =>
+            {
+                var json = e.Body.ToContent();
+                Received?.Invoke(this, new ReceivedEventArgs
+                {
+                    Topic = routingKey,
+                    HandledBy = receiverType,
+                    Message = json
+                });
+
+                Handle(container, json.ToObject<TContract>());
+            };
 
             Channel.BasicConsume(queue: queueName,
-                             noAck: true,
-                             consumer: consumer);
+                 noAck: true,
+                 consumer: consumer);
         }
 
-        private static void ValidateReceiverRegistration<TContract>(IContainer container)
+        public void Handle<TContract>(IContainer container,
+            TContract message)
         {
             using (var scope = container.BeginLifetimeScope())
             {
-                scope.Resolve<IReceive<TContract>>();
+                var receiver = scope.Resolve<IReceive<TContract>>();
+                receiver.Execute(message);
+            }
+        }
+
+        private static Type ResolveReceiverType<TContract>(IContainer container)
+        {
+            using (var scope = container.BeginLifetimeScope())
+            {
+                var receiver = scope.Resolve<IReceive<TContract>>();
+                return receiver.GetType();
             }
         }
     }

@@ -1,11 +1,14 @@
 ﻿using Autofac;
 using Autofac.Core;
 using Autofac.Core.Registration;
+using Newtonsoft.Json;
 using NSubstitute;
 using RabbitMQ.Client;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -240,7 +243,7 @@ namespace rabbitmq_demo.tests
             }
         }
 
-        
+
 
         [Fact]
         public async Task ListenerResolvesDependenciesToCreateInstances()
@@ -270,6 +273,165 @@ namespace rabbitmq_demo.tests
                     // Assert
                     dependency.Received(1).Foo();
                 }
+            }
+        }
+
+        [Fact]
+        public void ListenerThrowsExceptionWhenReceiverForContractIsNotResolved()
+        {
+            // Arrange
+            using (var listener = new Listener(Substitute.For<IConnectionFactory>(), "dummy"))
+            {
+                var builder = new ContainerBuilder();
+                builder
+                    .RegisterType<ReceiverWithDependency>();
+
+                // Act && Assert
+                Assert.Throws<ComponentNotRegisteredException>(() => listener.Subscribe<int>(builder.Build()));
+            }
+        }
+
+        [Fact]
+        public void ListenerThrowsExceptionWhenDependencyForReceiverIsNotResolved()
+        {
+            // Arrange
+            using (var listener = new Listener(Substitute.For<IConnectionFactory>(), "dummy"))
+            {
+                var builder = new ContainerBuilder();
+                builder
+                    .RegisterReceiverFor<ReceiverWithDependency, int>();
+
+                // Act && Assert
+                Assert.Throws<DependencyResolutionException>(() => listener.Subscribe<int>(builder.Build()));
+            }
+        }
+
+        [Fact]
+        public void ListenerDisposesDependenciesResolvedToCreateInstances()
+        {
+            // Arrange
+            using (var listener = new TestListener())
+            {
+                var dependency = Substitute.For<IDependency, IDisposable>();
+
+                var builder = new ContainerBuilder();
+                builder
+                    .Register(c => dependency);
+                builder
+                    .RegisterReceiverFor<ReceiverWithDependency, int>();
+
+                using (var container = builder.Build())
+                {
+                    // Act
+                    listener.Subscribe<int>(container);
+
+                    // Assert
+                    ((IDisposable)dependency).Received(1).Dispose();
+                }
+            }
+        }
+
+        [Fact]
+        public async Task ListenerDisposesResolvedDependenciesAfterExecute()
+        {
+            // Arrange
+            using (var listener = new TestListener())
+            using (var sender = listener.Sender())
+            {
+                var dependency = Substitute.For<IDependency, IDisposable>();
+
+                var builder = new ContainerBuilder();
+                builder
+                    .Register(c => dependency);
+                builder
+                    .RegisterReceiverFor<ReceiverWithDependency, int>();
+
+                using (var container = builder.Build())
+                {
+                    listener.Subscribe<int>(container);
+                    dependency.ClearReceivedCalls();
+
+                    var waiter = new ReceiveAsync<int>();
+                    listener.Subscribe(waiter);
+
+                    // Act
+                    sender.Publish(4);
+
+                    // Assert
+                    await waiter.WithTimeout();
+                    ((IDisposable)dependency).Received(1).Dispose();
+                }
+            }
+        }
+        [Fact]
+        public void ListenerUsesFactoryToCreateInstances()
+        {
+            // Arrange
+            using (var listener = new TestListener())
+            {
+                Func<IReceive<int>> factory = Substitute.For<Func<IReceive<int>>>();
+
+                // Act
+                listener
+                    .Subscribe(factory);
+
+                // Assert
+                factory.Received().Invoke();
+            }
+        }
+
+        [Fact]
+        public void ListenerDoesNotDisposeInstanceSubscribedReceivers()
+        {
+            // Arrange
+            using (var listener = new TestListener())
+            {
+                var service = Substitute.For<IReceive<int>, IDisposable>();
+
+                // Act
+                listener
+                    .Subscribe(service);
+
+                // Assert
+                ((IDisposable)service).DidNotReceive().Dispose();
+            }
+        }
+
+        [Fact]
+        public void ListenerDisposesFactoryCreatedReceivers()
+        {
+            // Arrange
+            using (var listener = new TestListener())
+            {
+                var service = Substitute.For<IReceive<int>, IDisposable>();
+
+                // Act
+                listener.Subscribe(() => service);
+
+                // Assert
+                ((IDisposable)service).Received(1).Dispose();
+            }
+        }
+
+        [Fact]
+        public async Task ListenerDisposesFactoryCreatedReceiversAfterExecute()
+        {
+            // Arrange
+            using (var listener = new TestListener())
+            using (var sender = listener.Sender())
+            {
+                var service = Substitute.For<IReceive<int>, IDisposable>();
+                listener.Subscribe(() => service);
+
+                var waiter = new ReceiveAsync<int>();
+                listener.Subscribe(waiter);
+
+                // Act
+                sender.Publish(4);
+
+                // Assert
+                await waiter.WithTimeout();
+                ((IDisposable)service).Received(1).Dispose();
             }
         }
 
