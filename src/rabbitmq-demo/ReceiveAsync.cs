@@ -8,7 +8,7 @@ namespace rabbitmq_demo
     {
         TaskCompletionSource<T> tcs = new TaskCompletionSource<T>();
 
-        public void Execute(T item)
+        public virtual void Execute(T item)
         {
             tcs.SetResult(item);
         }

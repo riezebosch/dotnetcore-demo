@@ -61,9 +61,41 @@ namespace rabbitmq_demo
             };
 
             Channel.BasicConsume(queue: queueName,
-                 noAck: true,
+                 noAck: false,
                  consumer: consumer);
         }
+
+
+        public void Command<TContract>(IContainer container)
+        {
+            var receiverType = ResolveReceiverType<TContract>(container);
+
+            var routingKey = typeof(TContract).Name;
+            Channel.QueueDeclare(queue: routingKey,
+                                 exclusive: false,
+                                 autoDelete: false,
+                                 arguments: null);
+
+            var consumer = new EventingBasicConsumer(Channel);
+            consumer.Received += (o, ea) =>
+            {
+                var json = ea.Body.ToContent();
+                Received?.Invoke(this, new ReceivedEventArgs
+                {
+                    Topic = routingKey,
+                    HandledBy = receiverType,
+                    Message = json
+                });
+
+                Handle(container, json.ToObject<TContract>());
+                Channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
+            };
+
+            Channel.BasicConsume(queue: routingKey,
+                 noAck: false,
+                 consumer: consumer);
+        }
+
 
         public void Handle<TContract>(IContainer container,
             TContract message)

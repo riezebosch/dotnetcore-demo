@@ -13,16 +13,16 @@ namespace rabbitmq_demo
 {
     public class ChannelBase : IDisposable
     {
-        private IConnection _connection;
+        protected IConnection Connection;
         protected IModel Channel { get; private set; }
         protected string Exchange { get; }
 
         public ChannelBase(IConnectionFactory factory, string exchange)
         {
             Exchange = exchange;
-            _connection = factory.CreateConnection();
+            Connection = factory.CreateConnection();
 
-            Channel = _connection.CreateModel();
+            Channel = Connection.CreateModel();
             Channel.ExchangeDeclare(exchange: Exchange,
                 type: ExchangeType.Topic);
        }
@@ -30,7 +30,7 @@ namespace rabbitmq_demo
         public virtual void Dispose()
         {
             Channel.Dispose();
-            _connection.Dispose();
+            Connection.Dispose();
         }
     }
 }

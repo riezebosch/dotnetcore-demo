@@ -28,5 +28,21 @@ namespace rabbitmq_demo
                                  basicProperties: null,
                                  body: message.ToBody());
         }
+
+        public void Command<T>(T input)
+        {
+            var routingKey = typeof(T).Name;
+            var message = input.ToMessage();
+
+            var Channel = Connection.CreateModel();
+            Channel.QueueDeclare(queue: routingKey,
+                autoDelete: false,
+                exclusive: false);
+
+            Channel.BasicPublish(exchange: "",
+                                 routingKey: routingKey,
+                                 basicProperties: null,
+                                 body: message.ToBody());
+        }
     }
 }
