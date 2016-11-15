@@ -27,6 +27,17 @@ namespace rabbitmq_demo
                 type: ExchangeType.Topic);
        }
 
+        protected IModel CommandQueueDeclare(string routingKey)
+        {
+            Channel.QueueDeclare(queue: routingKey,
+                                             exclusive: false,
+                                             autoDelete: false,
+                                             arguments: null);
+
+            return Channel;
+        }
+
+
         public virtual void Dispose()
         {
             Channel.Dispose();

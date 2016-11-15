@@ -34,12 +34,8 @@ namespace rabbitmq_demo
             var routingKey = typeof(T).Name;
             var message = input.ToMessage();
 
-            var Channel = Connection.CreateModel();
-            Channel.QueueDeclare(queue: routingKey,
-                autoDelete: false,
-                exclusive: false);
-
-            Channel.BasicPublish(exchange: "",
+            var channel = CommandQueueDeclare(routingKey);
+            channel.BasicPublish(exchange: "",
                                  routingKey: routingKey,
                                  basicProperties: null,
                                  body: message.ToBody());

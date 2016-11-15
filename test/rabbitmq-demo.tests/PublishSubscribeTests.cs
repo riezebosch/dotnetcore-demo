@@ -313,7 +313,9 @@ namespace rabbitmq_demo.tests
         public void ListenerDisposesDependenciesResolvedToCreateInstancesOnExecute()
         {
             // Arrange
+            bool disposed = false;
             var dependency = Substitute.For<IDependency, IDisposable>();
+            ((IDisposable)dependency).When(_ => _.Dispose()).Do(c => disposed = true);
 
             var builder = new ContainerBuilder();
             builder
@@ -333,11 +335,11 @@ namespace rabbitmq_demo.tests
 
                 // Act
                 sender.Publish(4);
-
-                // Assert
                 waiter.Next();
-                ((IDisposable)dependency).Received(1).Dispose();
             }
+
+            // Assert
+            Assert.True(disposed);
         }
 
         [Fact]

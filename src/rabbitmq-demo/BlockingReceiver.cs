@@ -19,7 +19,7 @@ namespace rabbitmq_demo
             _collection.Add(item);
         }
 
-        public TContract Next()
+        public virtual TContract Next()
         {
             return Next(TimeSpan.FromSeconds(5));
         }

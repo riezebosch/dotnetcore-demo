@@ -5,6 +5,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
+using NSubstitute.ExceptionExtensions;
+using System.Threading;
 
 namespace rabbitmq_demo.tests
 {
@@ -41,25 +43,37 @@ namespace rabbitmq_demo.tests
             {
                 sender.Command(3);
 
-                using (var listener = sender.Listener())
-                using (var service = Substitute.For<BlockingReceiver<int>>())
+                using (var wait = new ManualResetEvent(false))
                 {
-                    service
-                        .When(_ => _.Execute(3))
-                        .Do(_ => { throw new NotImplementedException(); });
-                    service.SubscribeToCommand(listener);
+                    var service = Substitute.For<IReceive<int>>();
+                    service.When(_ => _.Execute(Arg.Any<int>())).Do(_ =>
+                    {
+                        wait.Set();
+                        throw new NotImplementedException();
+                    });
 
-                    Assert.Throws<TimeoutException>(() => service.Next());
+                    using (var listener = sender.Listener())
+                    {
+                        var builder = new ContainerBuilder();
+                        builder.RegisterInstance(service);
+
+                        using (var container = builder.Build())
+                        {
+                            listener.SubscribeCommands<int>(container);
+                            Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
+                        }
+
+                        service.Received(1).Execute(3);
+                    }
                 }
 
                 using (var listener = sender.Listener())
                 using (var service = new BlockingReceiver<int>())
                 {
                     service.SubscribeToCommand(listener);
-                    var result = service.Next();
-
-                    Assert.Equal(3, result);
+                    Assert.Equal(3, service.Next());
                 }
+
             }
         }
 
@@ -98,32 +112,15 @@ namespace rabbitmq_demo.tests
                 using (var listener = sender.Listener())
                 using (var service = new BlockingReceiver<int>())
                 {
-                    var builder = new ContainerBuilder();
-                    builder
-                        .RegisterInstance<IReceive<int>>(service);
-
-                    using (var container = builder.Build())
-                    {
-                        listener.SubscribeCommands<int>(container);
-                        var result = service.Next();
-
-                        Assert.Equal(3, result);
-                    }
+                    service.SubscribeToCommand(listener);
+                    Assert.Equal(3, service.Next());
                 }
 
                 using (var listener = sender.Listener())
                 using (var service = new BlockingReceiver<int>())
                 {
-                    var builder = new ContainerBuilder();
-                    builder
-                        .RegisterInstance(service)
-                        .As<IReceive<int>>();
-
-                    using (var container = builder.Build())
-                    {
-                        listener.SubscribeCommands<int>(container);
-                        Assert.Throws<TimeoutException>(() => service.Next(TimeSpan.FromSeconds(1)));
-                    }
+                    service.SubscribeToCommand(listener);
+                    Assert.Throws<TimeoutException>(() => service.Next(TimeSpan.FromSeconds(1)));
                 }
             }
         }

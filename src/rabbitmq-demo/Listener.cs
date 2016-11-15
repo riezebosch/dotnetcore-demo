@@ -53,14 +53,10 @@ namespace rabbitmq_demo
         public void SubscribeCommands<TContract>(IContainer container)
         {
             var receiverType = ResolveReceiverType<TContract>(container);
-
             var routingKey = typeof(TContract).Name;
-            Channel.QueueDeclare(queue: routingKey,
-                                 exclusive: false,
-                                 autoDelete: false,
-                                 arguments: null);
+            var channel = CommandQueueDeclare(routingKey);
 
-            var consumer = new EventingBasicConsumer(Channel);
+            var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (o, ea) =>
             {
                 var json = ea.Body.ToContent();
@@ -75,11 +71,10 @@ namespace rabbitmq_demo
                 Channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
             };
 
-            Channel.BasicConsume(queue: routingKey,
+            channel.BasicConsume(queue: routingKey,
                  noAck: false,
                  consumer: consumer);
         }
-
 
         public void Handle<TContract>(IContainer container,
             TContract message)
