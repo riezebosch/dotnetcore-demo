@@ -30,7 +30,7 @@ namespace mvc_demo.service
             {
                 listener.Received += (o, e) => Console.WriteLine(e);
 
-                listener.Subscribe<PersonCreated>(container);
+                listener.SubscribeEvents<PersonCreated>(container);
                 Console.ReadKey();
             }
         }

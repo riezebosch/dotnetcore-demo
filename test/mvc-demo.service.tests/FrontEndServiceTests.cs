@@ -7,6 +7,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Autofac;
+using System.Threading;
 
 namespace mvc_demo.service.tests
 {
@@ -82,7 +84,7 @@ namespace mvc_demo.service.tests
 
         [Fact]
         [Trait("type", "integration")]
-        public async Task FrontEndServiceShouldRespondToPersonCreatedEvents()
+        public void FrontEndServiceShouldRespondToPersonCreatedEvents()
         {
             // Arrange
             using (var context = new FrontEndContext(
@@ -94,15 +96,27 @@ namespace mvc_demo.service.tests
                 using (var sender = new TestSender())
                 using (var receiver = sender.Listener())
                 {
-                    // Act
-                    var service = new FrontEndService(context);
-                    receiver.Subscribe(service);
+                    var builder = new ContainerBuilder();
+                    builder
+                        .RegisterType<FrontEndService>()
+                        .As<IReceive<PersonCreated>>();
+                    builder
+                        .RegisterInstance<IFrontEndContext>(context);
 
-                    var task = new ReceiveAsync<PersonCreated>();
-                    receiver.Subscribe(task);
+                    using (var containter = builder.Build())
+                    {
+                        // Act
+                        receiver
+                            .SubscribeEvents<PersonCreated>(containter);
 
-                    sender.Publish(new PersonCreated { });
-                    await task;
+                        using (var wait = new ManualResetEvent(false))
+                        {
+                            receiver.Received += (o, e) => wait.Set();
+                            sender.Publish(new PersonCreated { });
+
+                            wait.WaitOne(TimeSpan.FromSeconds(5));
+                        }
+                    }
                 }
 
                 // Assert

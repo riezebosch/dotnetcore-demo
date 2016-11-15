@@ -20,23 +20,7 @@ namespace rabbitmq_demo
         {
         }
 
-        public void Subscribe<TContract>(Func<IReceive<TContract>> factory)
-        {
-            var builder = new ContainerBuilder();
-            builder.Register(c => factory());
-
-            Subscribe<TContract>(builder.Build());
-        }
-
-        public void Subscribe<TContract>(IReceive<TContract> receiver)
-        {
-            var builder = new ContainerBuilder();
-            builder.RegisterInstance(receiver);
-
-            Subscribe<TContract>(builder.Build());
-        }
-
-        public void Subscribe<TContract>(IContainer container)
+        public void SubscribeEvents<TContract>(IContainer container)
         {
             var receiverType = ResolveReceiverType<TContract>(container);
 
@@ -66,7 +50,7 @@ namespace rabbitmq_demo
         }
 
 
-        public void Command<TContract>(IContainer container)
+        public void SubscribeCommands<TContract>(IContainer container)
         {
             var receiverType = ResolveReceiverType<TContract>(container);
 

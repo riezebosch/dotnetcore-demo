@@ -1,4 +1,5 @@
-﻿using RabbitMQ.Client;
+﻿using Autofac;
+using RabbitMQ.Client;
 using rabbitmq_demo;
 using System;
 using System.Collections.Generic;
@@ -24,19 +25,25 @@ namespace rabbitmq_console
                 Password = "manuel"
             };
 
-
             using (var listener = new Listener(connection, "DeelnemerService"))
             using (var sender = new Sender(connection, exchange: "DeelnemerService"))
             {
                 listener.Received += Print;
                 sender.Send += Print;
 
-                listener.Subscribe(new WriteLine<CreatePerson>());
+                var builder = new ContainerBuilder();
+                builder
+                    .RegisterReceiverFor<WriteLine<CreatePerson>, CreatePerson>();
 
-                string input = string.Empty;
-                while ((input = Console.ReadLine()) != "exit")
+                using (var container = builder.Build())
                 {
-                    sender.Publish(new CreatePerson { FirstName = input });
+                    listener.SubscribeEvents<CreatePerson>(container);
+
+                    string input = string.Empty;
+                    while ((input = Console.ReadLine()) != "exit")
+                    {
+                        sender.Publish(new CreatePerson { FirstName = input });
+                    }
                 }
             }
         }

@@ -28,7 +28,7 @@ namespace rabbitmq_demo_service
             using (var container = builder.Build())
             {
                 listener.Received += (o, e) => Console.WriteLine(e);
-                listener.Subscribe<CreatePerson>(container);
+                listener.SubscribeEvents<CreatePerson>(container);
 
                 Console.ReadKey();
             }

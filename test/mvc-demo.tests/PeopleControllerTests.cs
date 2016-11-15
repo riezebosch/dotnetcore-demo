@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using System.Text;
 using NSubstitute;
 using RabbitMQ.Client;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace mvc_demo.tests
 {
@@ -30,7 +31,7 @@ namespace mvc_demo.tests
             {
                 var controller = new PeopleController(sender);
                 var receiver = new ReceiveAsync<CreatePerson>();
-                listener.Subscribe(receiver);
+                receiver.SubscribeToEvents(listener);
 
                 controller.Create(new CreatePerson { FirstName = "first", LastName = "last" });
                 var command = await receiver.WithTimeout();
@@ -53,7 +54,7 @@ namespace mvc_demo.tests
         [Fact]
         public async Task OnlyAcceptPostRequestOnCreateAction()
         {
-            using (var server = StartTestServer())
+            using (var server = StartTestServer(null))
             using (var client = server.CreateClient())
             {
                 var result = await client.GetAsync("People/Create?first=test&last=test");
@@ -64,12 +65,13 @@ namespace mvc_demo.tests
         [Fact]
         public async Task IntegrationTestOnPostRequest()
         {
-            using (var server = StartTestServer())
+            using (var listener = new TestListener())
+            using (var sender = listener.Sender())
+            using (var server = StartTestServer(sender))
             using (var client = server.CreateClient())
-            using (var listener = new Listener(new ConnectionFactory(), "mvc-demo"))
             {
                 var receiver = new ReceiveAsync<CreatePerson>();
-                listener.Subscribe(receiver);
+                receiver.SubscribeToEvents(listener);
 
                 var result = client.PostAsync("People/Create", new StringContent(JsonConvert.SerializeObject(new { FirstName = "first", LastName = "last" }), Encoding.UTF8, "application/json")).Result;
                 var command = await receiver.WithTimeout();
@@ -81,13 +83,14 @@ namespace mvc_demo.tests
         }
 
 
-        private static TestServer StartTestServer()
+        private static TestServer StartTestServer(ISender sender)
         {
             return new TestServer(new WebHostBuilder()
                             .UseStartup<Startup>()
                             .UseContentRoot(Path.Combine(new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.Parent.FullName, "src", "mvc-demo"))
                             .ConfigureServices(services =>
                             {
+                                services.AddScoped(p => sender); ;
                             }));
         }
     }
