@@ -24,17 +24,17 @@ namespace mvc_demo.tests
     public class PeopleControllerTests
     {
         [Fact]
-        public async Task AddPersonPublishesPersonCreatedCommand()
+        public void AddPersonPublishesPersonCreatedCommand()
         {
             using (var listener = new TestListener())
             using (var sender = listener.Sender())
+            using (var service = new BlockingReceiver<CreatePerson>())
             {
                 var controller = new PeopleController(sender);
-                var receiver = new ReceiveAsync<CreatePerson>();
-                receiver.SubscribeToEvents(listener);
+                service.SubscribeToEvents(listener);
 
                 controller.Create(new CreatePerson { FirstName = "first", LastName = "last" });
-                var command = await receiver.WithTimeout();
+                var command = service.Next();
 
                 Assert.NotNull(command);
                 Assert.Equal("first", command.FirstName);
@@ -63,18 +63,18 @@ namespace mvc_demo.tests
         }
 
         [Fact]
-        public async Task IntegrationTestOnPostRequest()
+        public void IntegrationTestOnPostRequest()
         {
             using (var listener = new TestListener())
             using (var sender = listener.Sender())
             using (var server = StartTestServer(sender))
             using (var client = server.CreateClient())
+            using (var service = new BlockingReceiver<CreatePerson>())
             {
-                var receiver = new ReceiveAsync<CreatePerson>();
-                receiver.SubscribeToEvents(listener);
+                service.SubscribeToEvents(listener);
 
                 var result = client.PostAsync("People/Create", new StringContent(JsonConvert.SerializeObject(new { FirstName = "first", LastName = "last" }), Encoding.UTF8, "application/json")).Result;
-                var command = await receiver.WithTimeout();
+                var command = service.Next();
 
                 Assert.Equal(HttpStatusCode.Redirect, result.StatusCode);
                 Assert.Equal("first", command.FirstName);

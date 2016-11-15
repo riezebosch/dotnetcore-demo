@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using NSubstitute;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,23 +11,23 @@ namespace rabbitmq_demo.tests
     public class PublishCommandTests
     {
         [Fact]
-        public async Task CommandsAreDeliveredAlsoWhenPublishedBeforeListenerSubscribed()
+        public void CommandsAreDeliveredAlsoWhenPublishedBeforeListenerSubscribed()
         {
             using (var listener = new TestListener())
             using (var sender = listener.Sender())
+            using (var service = new BlockingReceiver<int>())
             {
                 sender.Command(3);
 
-                var awaiter = new ReceiveAsync<int>();
                 var builder = new ContainerBuilder();
                 builder
-                    .RegisterInstance(awaiter)
+                    .RegisterInstance(service)
                     .As<IReceive<int>>();
 
                 using (var container = builder.Build())
                 {
                     listener.SubscribeCommands<int>(container);
-                    var result = await awaiter.WithTimeout();
+                    var result = service.Next();
 
                     Assert.Equal(3, result);
                 }
@@ -34,62 +35,50 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public async Task ReceiverWithExceptionLeavesCommandInQueueToBeRedelivered()
+        public void ReceiverWithExceptionLeavesCommandInQueueToBeRedelivered()
         {
             using (var sender = new TestSender())
             {
                 sender.Command(3);
 
                 using (var listener = sender.Listener())
+                using (var service = Substitute.For<BlockingReceiver<int>>())
                 {
-                    var awaiter = new ReceiverWithException<int>();
-                    var builder = new ContainerBuilder();
-                    builder
-                        .RegisterInstance<IReceive<int>>(awaiter); ;
+                    service
+                        .When(_ => _.Execute(3))
+                        .Do(_ => { throw new NotImplementedException(); });
+                    service.SubscribeToCommand(listener);
 
-                    using (var container = builder.Build())
-                    {
-                        listener.SubscribeCommands<int>(container);
-                        var result = await awaiter.WithTimeout();
-                    }
+                    Assert.Throws<TimeoutException>(() => service.Next());
                 }
 
                 using (var listener = sender.Listener())
+                using (var service = new BlockingReceiver<int>())
                 {
-                    var awaiter = new ReceiveAsync<int>();
-                    var builder = new ContainerBuilder();
-                    builder
-                        .RegisterInstance(awaiter)
-                        .As<IReceive<int>>();
+                    service.SubscribeToCommand(listener);
+                    var result = service.Next();
 
-                    using (var container = builder.Build())
-                    {
-                        listener.SubscribeCommands<int>(container);
-                        var result = await awaiter.WithTimeout();
-
-                        Assert.Equal(3, result);
-                    }
+                    Assert.Equal(3, result);
                 }
-
             }
         }
 
         [Fact]
-        public async Task ListenerRaisesEventsOnReceivingCommands()
+        public void ListenerRaisesEventsOnReceivingCommands()
         {
             // Arrange
             using (var listener = new TestListener())
             using (var sender = listener.Sender())
+            using (var service = new BlockingReceiver<int>())
             {
                 var messages = new List<ReceivedEventArgs>();
                 listener.Received += (o, e) => messages.Add(e);
 
-                var service = new ReceiveAsync<int>();
                 service.SubscribeToCommand(listener);
 
                 // Act
                 sender.Command(3);
-                await service.WithTimeout();
+                service.Next();
 
                 // Assert
                 var message = messages.Single();
@@ -100,38 +89,40 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public async Task ReceivedCommandIsNotDeliveredTwice()
+        public void ReceivedCommandIsNotDeliveredTwice()
         {
             using (var sender = new TestSender())
             {
                 sender.Command(3);
 
                 using (var listener = sender.Listener())
+                using (var service = new BlockingReceiver<int>())
                 {
-                    var awaiter = new ReceiveAsync<int>();
                     var builder = new ContainerBuilder();
                     builder
-                        .RegisterInstance<IReceive<int>>(awaiter); ;
+                        .RegisterInstance<IReceive<int>>(service);
 
                     using (var container = builder.Build())
                     {
                         listener.SubscribeCommands<int>(container);
-                        var result = await awaiter.WithTimeout();
+                        var result = service.Next();
+
                         Assert.Equal(3, result);
                     }
                 }
+
                 using (var listener = sender.Listener())
+                using (var service = new BlockingReceiver<int>())
                 {
-                    var awaiter = new ReceiveAsync<int>();
                     var builder = new ContainerBuilder();
                     builder
-                        .RegisterInstance(awaiter)
+                        .RegisterInstance(service)
                         .As<IReceive<int>>();
 
                     using (var container = builder.Build())
                     {
                         listener.SubscribeCommands<int>(container);
-                        await Assert.ThrowsAsync<TimeoutException>(() => awaiter.WithTimeout(TimeSpan.FromSeconds(1)));
+                        Assert.Throws<TimeoutException>(() => service.Next(TimeSpan.FromSeconds(1)));
                     }
                 }
             }

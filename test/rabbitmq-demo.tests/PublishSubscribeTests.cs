@@ -18,12 +18,12 @@ namespace rabbitmq_demo.tests
     public class PublishSubscribeTests
     {
         [Fact]
-        public async Task PublishMessageShouldBeReceivedBySubsriber()
+        public void PublishMessageShouldBeReceivedBySubsriber()
         {
             // Arrange
             using (var listener = new TestListener())
+            using (var service = new BlockingReceiver<Person>())
             {
-                var service = new ReceiveAsync<Person>();
                 service.SubscribeToEvents(listener);
 
                 // Act
@@ -34,14 +34,14 @@ namespace rabbitmq_demo.tests
                 }
 
                 // Assert
-                var result = await service.WithTimeout();
+                var result = service.Next();
                 Assert.Equal(input.FirstName, result.FirstName);
                 Assert.Equal(input.LastName, result.LastName);
             }
         }
 
         [Fact]
-        public async Task ConnectWithCredentials()
+        public void ConnectWithCredentials()
         {
             // Arrange
             var input = new Person { FirstName = "Test", LastName = "Man" };
@@ -53,8 +53,8 @@ namespace rabbitmq_demo.tests
             };
 
             using (var listener = new Listener(connection, "demo2"))
+            using (var service = new BlockingReceiver<Person>())
             {
-                var service = new ReceiveAsync<Person>();
                 var builder = new ContainerBuilder();
                 builder
                     .RegisterInstance<IReceive<Person>>(service);
@@ -69,7 +69,7 @@ namespace rabbitmq_demo.tests
                     }
 
                     // Assert
-                    await service.WithTimeout();
+                    service.Next();
                 }
             }
         }
@@ -109,36 +109,35 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public async Task TwoListenersBothReceiveMessageAfterPublish()
+        public void TwoListenersBothReceiveMessageAfterPublish()
         {
             // Arrange
             using (var sender = new TestSender())
             using (var listener1 = sender.Listener())
             using (var listener2 = sender.Listener())
+            using (var service1 = new BlockingReceiver<Person>())
+            using (var service2 = new BlockingReceiver<Person>())
             {
-                var service1 = new ReceiveAsync<Person>();
                 service1.SubscribeToEvents(listener1);
-
-                var service2 = new ReceiveAsync<Person>();
                 service2.SubscribeToEvents(listener2);
 
                 // Act
                 sender.Publish(new Person { FirstName = "first" });
 
                 // Assert
-                await Task.WhenAll(service1.WithTimeout(), service2.WithTimeout());
+                service1.Next();
+                service2.Next();
             }
         }
 
         [Fact]
-        public async Task OneListenerReceivesTwoMessagesOfDifferentType()
+        public void OneListenerReceivesTwoMessagesOfDifferentType()
         {
             using (var listener = new TestListener())
+            using (var service1 = new BlockingReceiver<Person>())
+            using (var service2 = new BlockingReceiver<string>())
             {
-                var service1 = new ReceiveAsync<Person>();
                 service1.SubscribeToEvents(listener);
-
-                var service2 = new ReceiveAsync<string>();
                 service2.SubscribeToEvents(listener);
 
                 using (var sender = listener.Sender())
@@ -146,20 +145,21 @@ namespace rabbitmq_demo.tests
                     sender.Publish(new Person { FirstName = "first" });
                     sender.Publish("just simple text");
 
-                    await Task.WhenAll(service1.WithTimeout(), service2.WithTimeout());
+                    service1.Next();
+                    service2.Next();
                 }
             }
         }
 
         [Fact]
-        public async Task SendAndReceiveShouldNotDependOnClrTypes()
+        public void SendAndReceiveShouldNotDependOnClrTypes()
         {
             // Arrange
             var input = new ef_demo.Person { FirstName = "Test", LastName = "Man" };
 
             using (var listener = new TestListener())
+            using (var service = new BlockingReceiver<Person>())
             {
-                var service = new ReceiveAsync<Person>();
                 service.SubscribeToEvents(listener);
 
                 // Act
@@ -169,7 +169,7 @@ namespace rabbitmq_demo.tests
                 }
 
                 // Assert
-                var result = await service.WithTimeout();
+                var result = service.Next();
 
                 Assert.Equal(input.FirstName, result.FirstName);
                 Assert.Equal(input.LastName, result.LastName);
@@ -177,15 +177,15 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public async Task SendAndReceiveShouldDependOnClassName()
+        public void SendAndReceiveShouldDependOnClassName()
         {
             // Arrange
             var input = new Person { FirstName = "Test", LastName = "Man" };
 
             using (var listener = new TestListener())
             using (var wait = new ManualResetEvent(false))
+            using (var service = new BlockingReceiver<SomethingUnrelated>())
             {
-                var service = new ReceiveAsync<SomethingUnrelated>();
                 service.SubscribeToEvents(listener);
 
                 // Act
@@ -195,26 +195,27 @@ namespace rabbitmq_demo.tests
                 }
 
                 // Assert
-                await Assert.ThrowsAsync<TimeoutException>(() => service.WithTimeout());
+                Assert.Throws<TimeoutException>(() => service.Next(TimeSpan.FromSeconds(1)));
             }
         }
 
         [Fact]
-        public async Task ListenerRaisesEventsOnReceivingMessages()
+        public void ListenerRaisesEventsOnReceivingMessages()
         {
             // Arrange
             using (var listener = new TestListener())
             using (var sender = listener.Sender())
+            using (var service = new BlockingReceiver<int>())
             {
                 var messages = new List<ReceivedEventArgs>();
                 listener.Received += (o, e) => messages.Add(e);
 
-                var service = new ReceiveAsync<int>();
+
                 service.SubscribeToEvents(listener);
 
                 // Act
                 sender.Publish(3);
-                await service.WithTimeout();
+                service.Next();
 
                 // Assert
                 var message = messages.Single();
@@ -309,48 +310,45 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public async Task ListenerDisposesDependenciesResolvedToCreateInstancesOnExecute()
+        public void ListenerDisposesDependenciesResolvedToCreateInstancesOnExecute()
         {
             // Arrange
+            var dependency = Substitute.For<IDependency, IDisposable>();
+
+            var builder = new ContainerBuilder();
+            builder
+                .Register(c => dependency);
+            builder
+                .RegisterReceiverFor<ReceiverWithDependency, int>();
+
             using (var listener = new TestListener())
             using (var sender = listener.Sender())
+            using (var container = builder.Build())
+            using (var waiter = new BlockingReceiver<int>())
             {
-                var dependency = Substitute.For<IDependency, IDisposable>();
+                listener.SubscribeEvents<int>(container);
+                dependency.ClearReceivedCalls();
 
-                var builder = new ContainerBuilder();
-                builder
-                    .Register(c => dependency);
-                builder
-                    .RegisterReceiverFor<ReceiverWithDependency, int>();
+                waiter.SubscribeToEvents(listener);
 
-                using (var container = builder.Build())
-                {
-                    listener.SubscribeEvents<int>(container);
-                    dependency.ClearReceivedCalls();
+                // Act
+                sender.Publish(4);
 
-                    var waiter = new ReceiveAsync<int>();
-                    waiter.SubscribeToEvents(listener);
-
-                    // Act
-                    sender.Publish(4);
-
-                    // Assert
-                    await waiter.WithTimeout();
-                    ((IDisposable)dependency).Received(1).Dispose();
-                }
+                // Assert
+                waiter.Next();
+                ((IDisposable)dependency).Received(1).Dispose();
             }
         }
 
         [Fact]
-        public async Task TestListenerProvidesSpecificSender()
+        public void TestListenerProvidesSpecificSender()
         {
             using (var listener1 = new TestListener())
             using (var listener2 = new TestListener())
+            using (var service1 = new BlockingReceiver<int>())
+            using (var service2 = new BlockingReceiver<int>())
             {
-                var service1 = new ReceiveAsync<int>();
                 service1.SubscribeToEvents(listener1);
-
-                var service2 = new ReceiveAsync<int>();
                 service2.SubscribeToEvents(listener2);
 
                 using (var sender = listener1.Sender())
@@ -364,30 +362,29 @@ namespace rabbitmq_demo.tests
                 }
 
 
-                Assert.Equal(3, await service1.WithTimeout());
-                Assert.Equal(4, await service2.WithTimeout());
+                Assert.Equal(3, service1.Next());
+                Assert.Equal(4, service2.Next());
             }
         }
 
         [Fact]
-        public async Task TestSenderProvidesSpecificListener()
+        public void TestSenderProvidesSpecificListener()
         {
             using (var sender1 = new TestSender())
             using (var sender2 = new TestSender())
             using (var listener1 = sender1.Listener())
             using (var listener2 = sender2.Listener())
+            using (var service1 = new BlockingReceiver<int>())
+            using (var service2 = new BlockingReceiver<int>())
             {
-                var service1 = new ReceiveAsync<int>();
                 service1.SubscribeToEvents(listener1);
-
-                var service2 = new ReceiveAsync<int>();
                 service2.SubscribeToEvents(listener2);
 
                 sender1.Publish(3);
                 sender2.Publish(4);
 
-                Assert.Equal(3, await service1.WithTimeout());
-                Assert.Equal(4, await service2.WithTimeout());
+                Assert.Equal(3, service1.Next());
+                Assert.Equal(4, service2.Next());
             }
         }
 
