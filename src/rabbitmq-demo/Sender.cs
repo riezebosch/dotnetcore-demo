@@ -31,7 +31,7 @@ namespace rabbitmq_demo
 
         public void Command<T>(T input)
         {
-            var routingKey = typeof(T).Name;
+            var routingKey = $"{Exchange}.{typeof(T).Name}";
             var message = input.ToMessage();
 
             var channel = CommandQueueDeclare(routingKey);

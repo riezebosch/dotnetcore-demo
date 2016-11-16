@@ -53,7 +53,8 @@ namespace rabbitmq_demo
         public void SubscribeCommands<TContract>(IContainer container)
         {
             var receiverType = ResolveReceiverType<TContract>(container);
-            var routingKey = typeof(TContract).Name;
+            var routingKey = $"{Exchange}.{typeof(TContract).Name}";
+
             var channel = CommandQueueDeclare(routingKey);
 
             var consumer = new EventingBasicConsumer(channel);

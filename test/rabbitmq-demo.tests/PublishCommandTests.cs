@@ -124,5 +124,32 @@ namespace rabbitmq_demo.tests
                 }
             }
         }
+
+        [Fact]
+        public void ChannelBaseUsesPrivateQueuesPerNamespace()
+        {
+            using (var sender1 = new TestSender())
+            using (var sender2 = new TestSender())
+            {
+                sender1.Command(3);
+                sender2.Command(4);
+
+                using (var listener = sender1.Listener())
+                using (var service = new BlockingReceiver<int>())
+                {
+                    service.SubscribeToCommand(listener);
+                    Assert.Equal(3, service.Next());
+                    Assert.Throws<TimeoutException>(() => service.Next(TimeSpan.FromSeconds(1)));
+                }
+
+                using (var listener = sender2.Listener())
+                using (var service = new BlockingReceiver<int>())
+                {
+                    service.SubscribeToCommand(listener);
+                    Assert.Equal(4, service.Next());
+                    Assert.Throws<TimeoutException>(() => service.Next(TimeSpan.FromSeconds(1)));
+                }
+            }
+        }
     }
 }

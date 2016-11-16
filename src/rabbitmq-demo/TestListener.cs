@@ -30,7 +30,5 @@ namespace rabbitmq_demo
             Channel.ExchangeDelete(Exchange);
             base.Dispose();
         }
-
     }
-
 }
