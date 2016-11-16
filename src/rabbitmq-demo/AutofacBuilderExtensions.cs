@@ -9,12 +9,12 @@ namespace rabbitmq_demo
         public static IRegistrationBuilder<TReceiver, 
             ConcreteReflectionActivatorData, 
             SingleRegistrationStyle> 
-            RegisterReceiverFor<TReceiver, TContract>(this ContainerBuilder builder)
-            where TReceiver: IReceive<TContract>
+            RegisterReceiverFor<TReceiver, TMessage>(this ContainerBuilder builder)
+            where TReceiver: IReceive<TMessage>
         {
              return builder
                 .RegisterType<TReceiver>()
-                .As<IReceive<TContract>>();
+                .As<IReceive<TMessage>>();
         }
     }
 }

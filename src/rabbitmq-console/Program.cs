@@ -26,7 +26,7 @@ namespace rabbitmq_console
             };
 
             using (var listener = new Listener(connection, "DeelnemerService"))
-            using (var sender = new Sender(connection, exchange: "DeelnemerService"))
+            using (var sender = new Sender(connection, ns: "DeelnemerService"))
             {
                 listener.Received += Print;
                 sender.Send += Print;

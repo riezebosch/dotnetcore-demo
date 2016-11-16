@@ -15,20 +15,20 @@ namespace rabbitmq_demo
     {
         public event EventHandler<ReceivedEventArgs> Received;
 
-        public Listener(IConnectionFactory factory, string exchange)
-            : base(factory, exchange)
+        public Listener(IConnectionFactory factory, string ns)
+            : base(factory, ns)
         {
         }
 
-        public void SubscribeEvents<TContract>(IContainer container)
+        public void SubscribeEvents<TMessage>(IContainer container)
         {
-            var receiverType = ResolveReceiverType<TContract>(container);
+            var receiverType = ResolveReceiverType<TMessage>(container);
 
-            var routingKey = typeof(TContract).Name;
+            var topic = typeof(TMessage).Name;
             var queueName = Channel.QueueDeclare().QueueName;
             Channel.QueueBind(queue: queueName,
-                          exchange: Exchange,
-                          routingKey: routingKey);
+                          exchange: Namespace,
+                          routingKey: topic);
 
             var consumer = new EventingBasicConsumer(Channel);
             consumer.Received += (o, e) =>
@@ -36,12 +36,12 @@ namespace rabbitmq_demo
                 var json = e.Body.ToContent();
                 Received?.Invoke(this, new ReceivedEventArgs
                 {
-                    Topic = routingKey,
+                    Topic = topic,
                     HandledBy = receiverType,
                     Message = json
                 });
 
-                Handle(container, json.ToObject<TContract>());
+                Handle(container, json.ToObject<TMessage>());
             };
 
             Channel.BasicConsume(queue: queueName,
@@ -50,12 +50,12 @@ namespace rabbitmq_demo
         }
 
 
-        public void SubscribeCommands<TContract>(IContainer container)
+        public void SubscribeCommands<TMessage>(IContainer container)
         {
-            var receiverType = ResolveReceiverType<TContract>(container);
+            var receiverType = ResolveReceiverType<TMessage>(container);
 
-            var topic = typeof(TContract).Name;
-            var routingKey = $"{Exchange}.{topic}";
+            var topic = typeof(TMessage).Name;
+            var routingKey = $"{Namespace}.{topic}";
 
             var channel = CommandQueueDeclare(routingKey);
 
@@ -70,7 +70,7 @@ namespace rabbitmq_demo
                     Message = json
                 });
 
-                Handle(container, json.ToObject<TContract>());
+                Handle(container, json.ToObject<TMessage>());
                 Channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
             };
 
@@ -79,21 +79,21 @@ namespace rabbitmq_demo
                  consumer: consumer);
         }
 
-        public void Handle<TContract>(IContainer container,
-            TContract message)
+        public void Handle<TMessage>(IContainer container,
+            TMessage message)
         {
             using (var scope = container.BeginLifetimeScope())
             {
-                var receiver = scope.Resolve<IReceive<TContract>>();
+                var receiver = scope.Resolve<IReceive<TMessage>>();
                 receiver.Execute(message);
             }
         }
 
-        private static Type ResolveReceiverType<TContract>(IContainer container)
+        private static Type ResolveReceiverType<TMessage>(IContainer container)
         {
             using (var scope = container.BeginLifetimeScope())
             {
-                var receiver = scope.Resolve<IReceive<TContract>>();
+                var receiver = scope.Resolve<IReceive<TMessage>>();
                 return receiver.GetType();
             }
         }

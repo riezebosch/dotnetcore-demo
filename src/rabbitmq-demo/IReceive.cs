@@ -1,7 +1,7 @@
 ﻿namespace rabbitmq_demo
 {
-    public interface IReceive<TContract>
+    public interface IReceive<TMessage>
     {
-        void Execute(TContract item);
+        void Execute(TMessage item);
     }
 }

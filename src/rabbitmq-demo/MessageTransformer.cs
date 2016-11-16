@@ -13,9 +13,9 @@ namespace rabbitmq_demo
 {
     static class MessageTransformer
     {
-        public static TContract ToObject<TContract>(this string content)
+        public static TMessage ToObject<TMessage>(this string content)
         {
-            return JsonConvert.DeserializeObject<TContract>(content);
+            return JsonConvert.DeserializeObject<TMessage>(content);
         }
 
         public static string ToContent(this byte[] body)

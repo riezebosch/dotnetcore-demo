@@ -38,13 +38,13 @@ namespace rabbitmq_demo
         public Sender Sender()
         {
             return new TestSender(new ConnectionFactory(), 
-                Exchange, 
+                Namespace, 
                 _timeout);
         }
 
         public override void Dispose()
         {
-            Channel.ExchangeDelete(Exchange);
+            Channel.ExchangeDelete(Namespace);
             base.Dispose();
         }
 

@@ -11,32 +11,32 @@ namespace rabbitmq_demo
     {
         public event EventHandler<SendEventArgs> Send;
 
-        public Sender(IConnectionFactory factory, string exchange)
-            : base(factory, exchange)
+        public Sender(IConnectionFactory factory, string ns)
+            : base(factory, ns)
         {
         }
 
-        public void Publish<T>(T input)
+        public void Publish<TMessage>(TMessage input)
         {
-            var routingKey = typeof(T).Name;
+            var topic = typeof(TMessage).Name;
 
             var message = input.ToMessage();
-            Send?.Invoke(this, new SendEventArgs { Topic = routingKey, Message = message });
+            Send?.Invoke(this, new SendEventArgs { Topic = topic, Message = message });
 
-            Channel.BasicPublish(exchange: Exchange,
-                                 routingKey: routingKey,
+            Channel.BasicPublish(exchange: Namespace,
+                                 routingKey: topic,
                                  basicProperties: null,
                                  body: message.ToBody());
         }
 
-        public void Command<T>(T input)
+        public void Command<TMessage>(TMessage input)
         {
-            var routingKey = $"{Exchange}.{typeof(T).Name}";
+            var queue = $"{Namespace}.{typeof(TMessage).Name}";
             var message = input.ToMessage();
 
-            var channel = CommandQueueDeclare(routingKey);
+            var channel = CommandQueueDeclare(queue);
             channel.BasicPublish(exchange: "",
-                                 routingKey: routingKey,
+                                 routingKey: queue,
                                  basicProperties: null,
                                  body: message.ToBody());
         }

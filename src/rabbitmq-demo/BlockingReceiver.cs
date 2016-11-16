@@ -5,26 +5,26 @@ using System.Threading;
 
 namespace rabbitmq_demo
 {
-    public class BlockingReceiver<TContract> : IReceive<TContract>, IDisposable
+    public class BlockingReceiver<TMessage> : IReceive<TMessage>, IDisposable
     {
-        private BlockingCollection<TContract> _collection = new BlockingCollection<TContract>();
+        private BlockingCollection<TMessage> _collection = new BlockingCollection<TMessage>();
 
         public void Dispose()
         {
             _collection.Dispose();
         }
 
-        public virtual void Execute(TContract item)
+        public virtual void Execute(TMessage item)
         {
             _collection.Add(item);
         }
 
-        public virtual TContract Next()
+        public virtual TMessage Next()
         {
             return Next(TimeSpan.FromSeconds(5));
         }
 
-        public TContract Next(TimeSpan timeout)
+        public TMessage Next(TimeSpan timeout)
         {
             using (var cts = new CancellationTokenSource(timeout))
             {
@@ -41,18 +41,18 @@ namespace rabbitmq_demo
 
         public void SubscribeToEvents(Listener listener)
         {
-            listener.SubscribeEvents<TContract>(WrapInContainer());
+            listener.SubscribeEvents<TMessage>(WrapInContainer());
         }
 
         public void SubscribeToCommand(Listener listener)
         {
-            listener.SubscribeCommands<TContract>(WrapInContainer());
+            listener.SubscribeCommands<TMessage>(WrapInContainer());
         }
 
         private IContainer WrapInContainer()
         {
             var builder = new ContainerBuilder();
-            builder.RegisterInstance<IReceive<TContract>>(this);
+            builder.RegisterInstance<IReceive<TMessage>>(this);
 
             return builder.Build();
         }

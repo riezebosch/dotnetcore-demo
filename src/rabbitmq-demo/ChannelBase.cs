@@ -15,25 +15,25 @@ namespace rabbitmq_demo
     {
         protected IConnection Connection;
         protected IModel Channel { get; private set; }
-        protected string Exchange { get; }
+        protected string Namespace { get; }
         protected virtual IDictionary<string, object> Arguments { get; } = null;
 
-        public ChannelBase(IConnectionFactory factory, string exchange)
+        public ChannelBase(IConnectionFactory factory, string ns)
         {
-            Exchange = exchange;
+            Namespace = ns;
             Connection = factory.CreateConnection();
 
             Channel = Connection.CreateModel();
-            Channel.ExchangeDeclare(exchange: Exchange,
+            Channel.ExchangeDeclare(exchange: Namespace,
                 type: ExchangeType.Topic);
        }
 
-        protected IModel CommandQueueDeclare(string routingKey)
+        protected IModel CommandQueueDeclare(string queue)
         {
-            Channel.QueueDeclare(queue: routingKey,
-                                             exclusive: false,
-                                             autoDelete: false,
-                                             arguments: Arguments);
+            Channel.QueueDeclare(queue: queue,
+                exclusive: false,
+                autoDelete: false,
+                arguments: Arguments);
 
             return Channel;
         }

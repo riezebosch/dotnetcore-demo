@@ -34,14 +34,14 @@ namespace rabbitmq_demo
         {
             return new TestListener(
                 new ConnectionFactory(), 
-                Exchange,
+                Namespace,
                 _timeout);
         }
 
         
         public override void Dispose()
         {
-            Channel.ExchangeDelete(Exchange);
+            Channel.ExchangeDelete(Namespace);
             base.Dispose();
         }
 
