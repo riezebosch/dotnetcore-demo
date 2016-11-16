@@ -42,7 +42,7 @@ namespace rabbitmq_console
                     string input = string.Empty;
                     while ((input = Console.ReadLine()) != "exit")
                     {
-                        sender.Publish(new CreatePerson { FirstName = input });
+                        sender.PublishEvent(new CreatePerson { FirstName = input });
                     }
                 }
             }

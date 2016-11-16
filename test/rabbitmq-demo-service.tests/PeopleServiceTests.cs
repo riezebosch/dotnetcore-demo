@@ -54,7 +54,7 @@ namespace rabbitmq_demo_service.tests
         {
             var sender = new Mock<ISender>();
             sender.Setup(
-                m => m.Publish(It.Is<PersonCreated>(a =>
+                m => m.PublishEvent(It.Is<PersonCreated>(a =>
                     a.Id != 0
                     && a.FirstName == "Test"
                     && a.LastName == "Man")))

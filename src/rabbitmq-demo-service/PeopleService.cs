@@ -21,7 +21,7 @@ namespace rabbitmq_demo_service
             _context.People.Add(person);
             _context.SaveChanges();
 
-            _sender.Publish(new PersonCreated
+            _sender.PublishEvent(new PersonCreated
             {
                 Id = person.Id,
                 FirstName = person.FirstName,

@@ -16,7 +16,7 @@ namespace Controllers
         [HttpPost]
         public ActionResult Create([FromBody]CreatePerson data)
         {
-            _sender.Publish(data);
+            _sender.PublishCommand(data);
             return RedirectToAction("Index");
         }
 

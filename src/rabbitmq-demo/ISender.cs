@@ -4,6 +4,7 @@ namespace rabbitmq_demo
 {
     public interface ISender
     {
-        void Publish<T>(T personCreated);
+        void PublishEvent<TMessage>(TMessage message);
+        void PublishCommand<TMessage>(TMessage message);
     }
 }

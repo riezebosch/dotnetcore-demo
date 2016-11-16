@@ -30,7 +30,7 @@ namespace rabbitmq_demo.tests
                 var input = new Person { FirstName = "Test", LastName = "Man" };
                 using (var sender = listener.Sender())
                 {
-                    sender.Publish(input);
+                    sender.PublishEvent(input);
                 }
 
                 // Assert
@@ -65,7 +65,7 @@ namespace rabbitmq_demo.tests
                     // Act
                     using (var sender = new Sender(connection, "demo2"))
                     {
-                        sender.Publish(input);
+                        sender.PublishEvent(input);
                     }
 
                     // Assert
@@ -98,8 +98,8 @@ namespace rabbitmq_demo.tests
                     listener.SubscribeEvents<Person>(container);
                     using (var sender = listener.Sender())
                     {
-                        sender.Publish(new Person { FirstName = "first" });
-                        sender.Publish(new Person { FirstName = "second" });
+                        sender.PublishEvent(new Person { FirstName = "first" });
+                        sender.PublishEvent(new Person { FirstName = "second" });
                     }
 
                     Assert.True(wait.WaitHandle.WaitOne(TimeSpan.FromSeconds(5)));
@@ -122,7 +122,7 @@ namespace rabbitmq_demo.tests
                 service2.SubscribeToEvents(listener2);
 
                 // Act
-                sender.Publish(new Person { FirstName = "first" });
+                sender.PublishEvent(new Person { FirstName = "first" });
 
                 // Assert
                 service1.Next();
@@ -142,8 +142,8 @@ namespace rabbitmq_demo.tests
 
                 using (var sender = listener.Sender())
                 {
-                    sender.Publish(new Person { FirstName = "first" });
-                    sender.Publish("just simple text");
+                    sender.PublishEvent(new Person { FirstName = "first" });
+                    sender.PublishEvent("just simple text");
 
                     service1.Next();
                     service2.Next();
@@ -165,7 +165,7 @@ namespace rabbitmq_demo.tests
                 // Act
                 using (var sender = listener.Sender())
                 {
-                    sender.Publish(input);
+                    sender.PublishEvent(input);
                 }
 
                 // Assert
@@ -191,7 +191,7 @@ namespace rabbitmq_demo.tests
                 // Act
                 using (var sender = listener.Sender())
                 {
-                    sender.Publish(input);
+                    sender.PublishEvent(input);
                 }
 
                 // Assert
@@ -214,7 +214,7 @@ namespace rabbitmq_demo.tests
                 service.SubscribeToEvents(listener);
 
                 // Act
-                sender.Publish(3);
+                sender.PublishEvent(3);
                 service.Next();
 
                 // Assert
@@ -334,7 +334,7 @@ namespace rabbitmq_demo.tests
                 waiter.SubscribeToEvents(listener);
 
                 // Act
-                sender.Publish(4);
+                sender.PublishEvent(4);
                 waiter.Next();
             }
 
@@ -355,12 +355,12 @@ namespace rabbitmq_demo.tests
 
                 using (var sender = listener1.Sender())
                 {
-                    sender.Publish(3);
+                    sender.PublishEvent(3);
                 }
 
                 using (var sender = listener2.Sender())
                 {
-                    sender.Publish(4);
+                    sender.PublishEvent(4);
                 }
 
 
@@ -382,8 +382,8 @@ namespace rabbitmq_demo.tests
                 service1.SubscribeToEvents(listener1);
                 service2.SubscribeToEvents(listener2);
 
-                sender1.Publish(3);
-                sender2.Publish(4);
+                sender1.PublishEvent(3);
+                sender2.PublishEvent(4);
 
                 Assert.Equal(3, service1.Next());
                 Assert.Equal(4, service2.Next());
@@ -398,7 +398,7 @@ namespace rabbitmq_demo.tests
                 var message = string.Empty;
                 sender.Send += (o, e) => message = e.Message;
 
-                sender.Publish("hallo");
+                sender.PublishEvent("hallo");
 
                 Assert.Equal("\"hallo\"", message);
             }

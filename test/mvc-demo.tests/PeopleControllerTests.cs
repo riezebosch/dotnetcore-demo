@@ -26,20 +26,13 @@ namespace mvc_demo.tests
         [Fact]
         public void AddPersonPublishesPersonCreatedCommand()
         {
-            using (var listener = new TestListener())
-            using (var sender = listener.Sender())
-            using (var service = new BlockingReceiver<CreatePerson>())
-            {
-                var controller = new PeopleController(sender);
-                service.SubscribeToEvents(listener);
+            var sender = Substitute.For<ISender>();
+            var controller = new PeopleController(sender);
 
-                controller.Create(new CreatePerson { FirstName = "first", LastName = "last" });
-                var command = service.Next();
+            var command = new CreatePerson { FirstName = "first", LastName = "last" };
+            controller.Create(command);
 
-                Assert.NotNull(command);
-                Assert.Equal("first", command.FirstName);
-                Assert.Equal("last", command.LastName);
-            }
+            sender.Received(1).PublishCommand(command);
         }
 
         [Fact]
@@ -54,7 +47,7 @@ namespace mvc_demo.tests
         [Fact]
         public async Task OnlyAcceptPostRequestOnCreateAction()
         {
-            using (var server = StartTestServer(null))
+            using (var server = StartTestServer())
             using (var client = server.CreateClient())
             {
                 var result = await client.GetAsync("People/Create?first=test&last=test");
@@ -65,33 +58,28 @@ namespace mvc_demo.tests
         [Fact]
         public void IntegrationTestOnPostRequest()
         {
-            using (var listener = new TestListener())
-            using (var sender = listener.Sender())
-            using (var server = StartTestServer(sender))
-            using (var client = server.CreateClient())
             using (var service = new BlockingReceiver<CreatePerson>())
+            using (var listener = new Listener(new ConnectionFactory(), "mvc-demo"))
+            using (var server = StartTestServer())
+            using (var client = server.CreateClient())
             {
-                service.SubscribeToEvents(listener);
+                service.SubscribeToCommand(listener);
 
                 var result = client.PostAsync("People/Create", new StringContent(JsonConvert.SerializeObject(new { FirstName = "first", LastName = "last" }), Encoding.UTF8, "application/json")).Result;
-                var command = service.Next();
-
                 Assert.Equal(HttpStatusCode.Redirect, result.StatusCode);
+
+                var command = service.Next();
                 Assert.Equal("first", command.FirstName);
                 Assert.Equal("last", command.LastName);
             }
         }
 
 
-        private static TestServer StartTestServer(ISender sender)
+        private static TestServer StartTestServer()
         {
             return new TestServer(new WebHostBuilder()
                             .UseStartup<Startup>()
-                            .UseContentRoot(Path.Combine(new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.Parent.FullName, "src", "mvc-demo"))
-                            .ConfigureServices(services =>
-                            {
-                                services.AddScoped(p => sender); ;
-                            }));
+                            .UseContentRoot(Path.Combine(new DirectoryInfo(Directory.GetCurrentDirectory()).Parent.Parent.FullName, "src", "mvc-demo")));
         }
     }
 }

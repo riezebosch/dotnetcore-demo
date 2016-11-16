@@ -18,7 +18,7 @@ namespace rabbitmq_demo.tests
         {
             using (var sender = new TestSender())
             {
-                sender.Command(3);
+                sender.PublishCommand(3);
 
                 using (var service = new BlockingReceiver<int>())
                 using (var listener = sender.Listener())
@@ -36,7 +36,7 @@ namespace rabbitmq_demo.tests
         {
             using (var sender = new TestSender())
             {
-                sender.Command(3);
+                sender.PublishCommand(3);
 
                 using (var wait = new ManualResetEvent(false))
                 {
@@ -83,7 +83,7 @@ namespace rabbitmq_demo.tests
                 service.SubscribeToCommand(listener);
 
                 // Act
-                sender.Command(3);
+                sender.PublishCommand(3);
                 service.Next();
 
                 // Assert
@@ -99,7 +99,7 @@ namespace rabbitmq_demo.tests
         {
             using (var sender = new TestSender())
             {
-                sender.Command(3);
+                sender.PublishCommand(3);
 
                 using (var service = new BlockingReceiver<int>())
                 using (var listener = sender.Listener())
@@ -123,8 +123,8 @@ namespace rabbitmq_demo.tests
             using (var sender1 = new TestSender())
             using (var sender2 = new TestSender())
             {
-                sender1.Command(3);
-                sender2.Command(4);
+                sender1.PublishCommand(3);
+                sender2.PublishCommand(4);
 
                 using (var listener = sender1.Listener())
                 using (var service = new BlockingReceiver<int>())
@@ -150,7 +150,7 @@ namespace rabbitmq_demo.tests
             var timeout = TimeSpan.FromSeconds(1);
             using (var sender = new TestSender(timeout))
             {
-                sender.Command(6);
+                sender.PublishCommand(6);
                 using (var service = new BlockingReceiver<int>())
                 using (var listener = sender.Listener())
                 {
@@ -159,7 +159,7 @@ namespace rabbitmq_demo.tests
                 }
 
 
-                sender.Command(3);
+                sender.PublishCommand(3);
                 Thread.Sleep(timeout);
 
                 using (var service = new BlockingReceiver<int>())
@@ -183,7 +183,7 @@ namespace rabbitmq_demo.tests
             var ns = "test";
             using (var sender = new Sender(connection, ns))
             {
-                sender.Command(6);
+                sender.PublishCommand(6);
                 using (var service = new BlockingReceiver<int>())
                 using (var listener = new Listener(connection, ns))
                 {
@@ -191,7 +191,7 @@ namespace rabbitmq_demo.tests
                     Assert.Equal(6, service.Next());
                 }
 
-                sender.Command(3);
+                sender.PublishCommand(3);
                 Thread.Sleep(TimeSpan.FromSeconds(5));
 
                 using (var service = new BlockingReceiver<int>())

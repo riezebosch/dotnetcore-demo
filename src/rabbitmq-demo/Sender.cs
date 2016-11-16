@@ -16,7 +16,7 @@ namespace rabbitmq_demo
         {
         }
 
-        public void Publish<TMessage>(TMessage input)
+        public void PublishEvent<TMessage>(TMessage input)
         {
             var topic = typeof(TMessage).Name;
 
@@ -29,7 +29,7 @@ namespace rabbitmq_demo
                                  body: message.ToBody());
         }
 
-        public void Command<TMessage>(TMessage input)
+        public void PublishCommand<TMessage>(TMessage input)
         {
             var queue = $"{Namespace}.{typeof(TMessage).Name}";
             var message = input.ToMessage();

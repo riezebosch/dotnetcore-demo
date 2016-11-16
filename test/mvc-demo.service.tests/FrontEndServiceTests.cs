@@ -112,7 +112,7 @@ namespace mvc_demo.service.tests
                         using (var wait = new ManualResetEvent(false))
                         {
                             receiver.Received += (o, e) => wait.Set();
-                            sender.Publish(new PersonCreated { });
+                            sender.PublishEvent(new PersonCreated { });
 
                             wait.WaitOne(TimeSpan.FromSeconds(5));
                         }
