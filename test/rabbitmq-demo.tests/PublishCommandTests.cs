@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Xunit;
 using NSubstitute.ExceptionExtensions;
 using System.Threading;
+using RabbitMQ.Client;
 
 namespace rabbitmq_demo.tests
 {
@@ -15,20 +16,14 @@ namespace rabbitmq_demo.tests
         [Fact]
         public void CommandsAreDeliveredAlsoWhenPublishedBeforeListenerSubscribed()
         {
-            using (var listener = new TestListener())
-            using (var sender = listener.Sender())
-            using (var service = new BlockingReceiver<int>())
+            using (var sender = new TestSender())
             {
                 sender.Command(3);
 
-                var builder = new ContainerBuilder();
-                builder
-                    .RegisterInstance(service)
-                    .As<IReceive<int>>();
-
-                using (var container = builder.Build())
+                using (var service = new BlockingReceiver<int>())
+                using (var listener = sender.Listener())
                 {
-                    listener.SubscribeCommands<int>(container);
+                    service.SubscribeToCommand(listener);
                     var result = service.Next();
 
                     Assert.Equal(3, result);
@@ -52,23 +47,20 @@ namespace rabbitmq_demo.tests
                         throw new NotImplementedException();
                     });
 
+                    var builder = new ContainerBuilder();
+                    builder.RegisterInstance(service);
+                    using (var container = builder.Build())
                     using (var listener = sender.Listener())
                     {
-                        var builder = new ContainerBuilder();
-                        builder.RegisterInstance(service);
-
-                        using (var container = builder.Build())
-                        {
-                            listener.SubscribeCommands<int>(container);
-                            Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
-                        }
+                        listener.SubscribeCommands<int>(container);
+                        Assert.True(wait.WaitOne(TimeSpan.FromSeconds(5)));
 
                         service.Received(1).Execute(3);
                     }
                 }
 
-                using (var listener = sender.Listener())
                 using (var service = new BlockingReceiver<int>())
+                using (var listener = sender.Listener())
                 {
                     service.SubscribeToCommand(listener);
                     Assert.Equal(3, service.Next());
@@ -81,9 +73,9 @@ namespace rabbitmq_demo.tests
         public void ListenerRaisesEventsOnReceivingCommands()
         {
             // Arrange
+            using (var service = new BlockingReceiver<int>())
             using (var listener = new TestListener())
             using (var sender = listener.Sender())
-            using (var service = new BlockingReceiver<int>())
             {
                 var messages = new List<ReceivedEventArgs>();
                 listener.Received += (o, e) => messages.Add(e);
@@ -109,15 +101,15 @@ namespace rabbitmq_demo.tests
             {
                 sender.Command(3);
 
-                using (var listener = sender.Listener())
                 using (var service = new BlockingReceiver<int>())
+                using (var listener = sender.Listener())
                 {
                     service.SubscribeToCommand(listener);
                     Assert.Equal(3, service.Next());
                 }
 
-                using (var listener = sender.Listener())
                 using (var service = new BlockingReceiver<int>())
+                using (var listener = sender.Listener())
                 {
                     service.SubscribeToCommand(listener);
                     Assert.Throws<TimeoutException>(() => service.Next(TimeSpan.FromSeconds(1)));
@@ -159,24 +151,54 @@ namespace rabbitmq_demo.tests
             using (var sender = new TestSender(timeout))
             {
                 sender.Command(6);
+                using (var service = new BlockingReceiver<int>())
                 using (var listener = sender.Listener())
                 {
-                    using (var service = new BlockingReceiver<int>())
-                    {
-                        service.SubscribeToCommand(listener);
-                        Assert.Equal(6, service.Next());
-                    }
+                    service.SubscribeToCommand(listener);
+                    Assert.Equal(6, service.Next());
+                }
+
+
+                sender.Command(3);
+                Thread.Sleep(timeout);
+
+                using (var service = new BlockingReceiver<int>())
+                using (var listener = sender.Listener())
+                {
+                    service.SubscribeToCommand(listener);
+                    Assert.Throws<TimeoutException>(() => service.Next(TimeSpan.FromSeconds(1)));
+                }
+            }
+        }
+
+        [Fact]
+        public void ListenerAndSenderKeepCommandQueues()
+        {
+            var connection = new ConnectionFactory
+            {
+                HostName = "localhost",
+                UserName = "guest",
+                Password = "guest"
+            };
+            var ns = "test";
+            using (var sender = new Sender(connection, ns))
+            {
+                sender.Command(6);
+                using (var service = new BlockingReceiver<int>())
+                using (var listener = new Listener(connection, ns))
+                {
+                    service.SubscribeToCommand(listener);
+                    Assert.Equal(6, service.Next());
                 }
 
                 sender.Command(3);
-                using (var listener = sender.Listener())
+                Thread.Sleep(TimeSpan.FromSeconds(5));
+
+                using (var service = new BlockingReceiver<int>())
+                using (var listener = new Listener(connection, ns))
                 {
-                    Thread.Sleep(timeout);
-                    using (var service = new BlockingReceiver<int>())
-                    {
-                        service.SubscribeToCommand(listener);
-                        Assert.Throws<TimeoutException>(() => service.Next(TimeSpan.FromSeconds(1)));
-                    }
+                    service.SubscribeToCommand(listener);
+                    Assert.Equal(3, service.Next());
                 }
             }
         }

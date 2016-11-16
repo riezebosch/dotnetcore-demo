@@ -18,13 +18,13 @@ namespace rabbitmq_demo.tests
     public class PublishSubscribeTests
     {
         [Fact]
-        public void PublishMessageShouldBeReceivedBySubsriber()
+        public void PublishedMessageShouldBeReceivedBySubscribedReceiver()
         {
             // Arrange
             using (var listener = new TestListener())
-            using (var service = new BlockingReceiver<Person>())
+            using (var receiver = new BlockingReceiver<Person>())
             {
-                service.SubscribeToEvents(listener);
+                receiver.SubscribeToEvents(listener);
 
                 // Act
                 var input = new Person { FirstName = "Test", LastName = "Man" };
@@ -34,14 +34,14 @@ namespace rabbitmq_demo.tests
                 }
 
                 // Assert
-                var result = service.Next();
+                var result = receiver.Next();
                 Assert.Equal(input.FirstName, result.FirstName);
                 Assert.Equal(input.LastName, result.LastName);
             }
         }
 
         [Fact]
-        public void ConnectWithCredentials()
+        public void ListenerAndSenderShouldConnectWithSpecifiedCredentials()
         {
             // Arrange
             var input = new Person { FirstName = "Test", LastName = "Man" };
@@ -109,7 +109,7 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public void TwoListenersBothReceiveMessageAfterPublish()
+        public void PublishedMessageShouldBeDeliveredToSubscribedReceiversFromBothListeners()
         {
             // Arrange
             using (var sender = new TestSender())
@@ -131,7 +131,7 @@ namespace rabbitmq_demo.tests
         }
 
         [Fact]
-        public void OneListenerReceivesTwoMessagesOfDifferentType()
+        public void ListenerReceivesTwoMessagesOfDifferentType()
         {
             using (var listener = new TestListener())
             using (var service1 = new BlockingReceiver<Person>())
@@ -394,7 +394,6 @@ namespace rabbitmq_demo.tests
         public void SenderRaisesEvent()
         {
             using (var sender = new TestSender())
-            using (var listener = sender.Listener())
             {
                 var message = string.Empty;
                 sender.Send += (o, e) => message = e.Message;
