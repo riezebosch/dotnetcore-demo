@@ -11,15 +11,13 @@ namespace rabbitmq_demo.tests
         public void RegisterReceiverForContractInterface()
         {
             var builder = new ContainerBuilder();
-            {
-                var dependency = Substitute.For<IDependency>();
-                builder.RegisterInstance(dependency);
+            var dependency = Substitute.For<IDependency>();
+            builder.RegisterInstance(dependency);
 
-                builder.RegisterReceiverFor<ReceiverWithDependency, int>();
-                var container = builder.Build();
+            builder.RegisterReceiverFor<ReceiverWithDependency, int>();
+            var container = builder.Build();
 
-                var receiver = container.Resolve<IReceive<int>>();
-            }
+            var receiver = container.Resolve<IReceive<int>>();
         }
     }
 }
