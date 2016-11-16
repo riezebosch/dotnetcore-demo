@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Moq;
 using mvc_demo.database;
 using rabbitmq_demo;
 using System;
@@ -9,6 +8,7 @@ using Xunit;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Autofac;
 using System.Threading;
+using NSubstitute;
 
 namespace mvc_demo.service.tests
 {
@@ -18,21 +18,18 @@ namespace mvc_demo.service.tests
         public void FrontEndServiceShouldStorePersonCreatedEventsWithMoq()
         {
             // Arrange
-            var dbset = new Mock<DbSet<Person>>();
-            dbset.Setup(m => m.Add(It.IsAny<Person>())).Verifiable();
+            var dbset = Substitute.For<DbSet<Person>>();
+            var context = Substitute.For<IFrontEndContext>();
+            context.People.Returns(dbset);
 
-            var context = new Mock<IFrontEndContext>();
-            context.Setup(m => m.People).Returns(dbset.Object);
-            context.Setup(m => m.SaveChanges()).Verifiable();
-
-            var service = new FrontEndService(context.Object);
+            var service = new FrontEndService(context);
 
             // Act
             service.Execute(new PersonCreated { });
-            
+
             // Assert
-            dbset.Verify();
-            context.Verify();
+            dbset.Received(1).Add(Arg.Any<Person>());
+            context.Received(1).SaveChanges();
         }
 
         [Fact]
@@ -93,30 +90,24 @@ namespace mvc_demo.service.tests
                 context.Database.EnsureDeleted();
                 context.Database.EnsureCreated();
 
+                var builder = new ContainerBuilder();
+                builder
+                    .RegisterType<FrontEndService>()
+                    .As<IReceive<PersonCreated>>();
+                builder
+                    .RegisterInstance<IFrontEndContext>(context).ExternallyOwned();
+
+                using (var waiter = new BlockingReceiver<PersonCreated>())
+                using (var container = builder.Build())
                 using (var sender = new TestSender())
-                using (var receiver = sender.Listener())
+                using (var listener = sender.Listener())
                 {
-                    var builder = new ContainerBuilder();
-                    builder
-                        .RegisterType<FrontEndService>()
-                        .As<IReceive<PersonCreated>>();
-                    builder
-                        .RegisterInstance<IFrontEndContext>(context);
+                    listener.SubscribeEvents<PersonCreated>(container);
+                    waiter.SubscribeToEvents(listener);
 
-                    using (var containter = builder.Build())
-                    {
-                        // Act
-                        receiver
-                            .SubscribeEvents<PersonCreated>(containter);
-
-                        using (var wait = new ManualResetEvent(false))
-                        {
-                            receiver.Received += (o, e) => wait.Set();
-                            sender.PublishEvent(new PersonCreated { });
-
-                            wait.WaitOne(TimeSpan.FromSeconds(5));
-                        }
-                    }
+                    // Act
+                    sender.PublishEvent(new PersonCreated { });
+                    waiter.Next();
                 }
 
                 // Assert
