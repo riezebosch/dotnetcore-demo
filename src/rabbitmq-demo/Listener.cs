@@ -53,7 +53,9 @@ namespace rabbitmq_demo
         public void SubscribeCommands<TContract>(IContainer container)
         {
             var receiverType = ResolveReceiverType<TContract>(container);
-            var routingKey = $"{Exchange}.{typeof(TContract).Name}";
+
+            var topic = typeof(TContract).Name;
+            var routingKey = $"{Exchange}.{topic}";
 
             var channel = CommandQueueDeclare(routingKey);
 
@@ -63,7 +65,7 @@ namespace rabbitmq_demo
                 var json = ea.Body.ToContent();
                 Received?.Invoke(this, new ReceivedEventArgs
                 {
-                    Topic = routingKey,
+                    Topic = topic,
                     HandledBy = receiverType,
                     Message = json
                 });

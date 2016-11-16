@@ -16,6 +16,7 @@ namespace rabbitmq_demo
         protected IConnection Connection;
         protected IModel Channel { get; private set; }
         protected string Exchange { get; }
+        protected virtual IDictionary<string, object> Arguments { get; } = null;
 
         public ChannelBase(IConnectionFactory factory, string exchange)
         {
@@ -32,7 +33,7 @@ namespace rabbitmq_demo
             Channel.QueueDeclare(queue: routingKey,
                                              exclusive: false,
                                              autoDelete: false,
-                                             arguments: null);
+                                             arguments: Arguments);
 
             return Channel;
         }

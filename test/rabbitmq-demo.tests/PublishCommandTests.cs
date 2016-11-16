@@ -151,5 +151,34 @@ namespace rabbitmq_demo.tests
                 }
             }
         }
+
+        [Fact]
+        public void TestListenerAndSenderRemovesCommandQueues()
+        {
+            var timeout = TimeSpan.FromSeconds(1);
+            using (var sender = new TestSender(timeout))
+            {
+                sender.Command(6);
+                using (var listener = sender.Listener())
+                {
+                    using (var service = new BlockingReceiver<int>())
+                    {
+                        service.SubscribeToCommand(listener);
+                        Assert.Equal(6, service.Next());
+                    }
+                }
+
+                sender.Command(3);
+                using (var listener = sender.Listener())
+                {
+                    Thread.Sleep(timeout);
+                    using (var service = new BlockingReceiver<int>())
+                    {
+                        service.SubscribeToCommand(listener);
+                        Assert.Throws<TimeoutException>(() => service.Next(TimeSpan.FromSeconds(1)));
+                    }
+                }
+            }
+        }
     }
 }

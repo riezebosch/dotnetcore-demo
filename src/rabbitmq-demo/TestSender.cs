@@ -9,22 +9,46 @@ namespace rabbitmq_demo
 {
     public class TestSender : Sender
     {
+        private int _timeout;
+        
         public TestSender()
-            : base(new ConnectionFactory(), 
-                  Guid.NewGuid().ToString())
+            : this(TimeSpan.FromSeconds(10))
         {
+        }
+
+        public TestSender(TimeSpan timeout) :
+            this(new ConnectionFactory(), 
+                  Guid.NewGuid().ToString(),
+                  (int)timeout.TotalMilliseconds)
+        {
+        }
+
+        internal TestSender(IConnectionFactory factory, 
+            string exchange, 
+            int timeout) : base(factory, exchange)
+        {
+            _timeout = timeout;
         }
 
         public Listener Listener()
         {
-            return new Listener(new ConnectionFactory(), 
-                Exchange);
+            return new TestListener(
+                new ConnectionFactory(), 
+                Exchange,
+                _timeout);
         }
 
+        
         public override void Dispose()
         {
             Channel.ExchangeDelete(Exchange);
             base.Dispose();
         }
+
+        protected override IDictionary<string, object> Arguments => 
+            new Dictionary<string, object>
+            {
+                { "x-expires", _timeout }
+            };
     }
 }
