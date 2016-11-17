@@ -89,7 +89,7 @@ namespace rabbitmq_demo.tests
                 // Assert
                 var message = messages.Single();
                 Assert.Equal(service.GetType(), message.HandledBy);
-                Assert.Equal("Int32", message.Topic);
+                Assert.Equal(typeof(int), message.MessageType);
                 Assert.Equal("3", message.Message);
             }
         }
@@ -157,7 +157,6 @@ namespace rabbitmq_demo.tests
                     service.SubscribeToCommand(listener);
                     Assert.Equal(6, service.Next());
                 }
-
 
                 sender.PublishCommand(3);
                 Thread.Sleep(timeout);

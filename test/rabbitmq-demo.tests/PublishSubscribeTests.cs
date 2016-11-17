@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using NSubstitute;
 using RabbitMQ.Client;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,8 +22,8 @@ namespace rabbitmq_demo.tests
         public void PublishedMessageShouldBeReceivedBySubscribedReceiver()
         {
             // Arrange
-            using (var listener = new TestListener())
             using (var receiver = new BlockingReceiver<Person>())
+            using (var listener = new TestListener())
             {
                 receiver.SubscribeToEvents(listener);
 
@@ -52,8 +53,8 @@ namespace rabbitmq_demo.tests
                 Password = "guest"
             };
 
-            using (var listener = new Listener(connection, "demo2"))
             using (var service = new BlockingReceiver<Person>())
+            using (var listener = new Listener(connection, "demo2"))
             {
                 var builder = new ContainerBuilder();
                 builder
@@ -113,10 +114,10 @@ namespace rabbitmq_demo.tests
         {
             // Arrange
             using (var sender = new TestSender())
-            using (var listener1 = sender.Listener())
-            using (var listener2 = sender.Listener())
             using (var service1 = new BlockingReceiver<Person>())
             using (var service2 = new BlockingReceiver<Person>())
+            using (var listener1 = sender.Listener())
+            using (var listener2 = sender.Listener())
             {
                 service1.SubscribeToEvents(listener1);
                 service2.SubscribeToEvents(listener2);
@@ -133,9 +134,9 @@ namespace rabbitmq_demo.tests
         [Fact]
         public void ListenerReceivesTwoMessagesOfDifferentType()
         {
-            using (var listener = new TestListener())
             using (var service1 = new BlockingReceiver<Person>())
             using (var service2 = new BlockingReceiver<string>())
+            using (var listener = new TestListener())
             {
                 service1.SubscribeToEvents(listener);
                 service2.SubscribeToEvents(listener);
@@ -157,8 +158,8 @@ namespace rabbitmq_demo.tests
             // Arrange
             var input = new ef_demo.Person { FirstName = "Test", LastName = "Man" };
 
-            using (var listener = new TestListener())
             using (var service = new BlockingReceiver<Person>())
+            using (var listener = new TestListener())
             {
                 service.SubscribeToEvents(listener);
 
@@ -182,9 +183,8 @@ namespace rabbitmq_demo.tests
             // Arrange
             var input = new Person { FirstName = "Test", LastName = "Man" };
 
-            using (var listener = new TestListener())
-            using (var wait = new ManualResetEvent(false))
             using (var service = new BlockingReceiver<SomethingUnrelated>())
+            using (var listener = new TestListener())
             {
                 service.SubscribeToEvents(listener);
 
@@ -203,24 +203,28 @@ namespace rabbitmq_demo.tests
         public void ListenerRaisesEventsOnReceivingMessages()
         {
             // Arrange
+            var builder = new ContainerBuilder();
+            builder
+                .Register(c => Substitute.For<IReceive<int>>());
+
+            using (var messages = new BlockingCollection<ReceivedEventArgs>())
+            using (var container = builder.Build())
             using (var listener = new TestListener())
             using (var sender = listener.Sender())
-            using (var service = new BlockingReceiver<int>())
             {
-                var messages = new List<ReceivedEventArgs>();
-                listener.Received += (o, e) => messages.Add(e);
-
-
-                service.SubscribeToEvents(listener);
-
+                listener
+                    .SubscribeEvents<int>(container);
+                listener
+                    .Received += (o, e) => messages.Add(e);
+            
                 // Act
                 sender.PublishEvent(3);
-                service.Next();
 
                 // Assert
-                var message = messages.Single();
-                Assert.Equal(service.GetType(), message.HandledBy);
-                Assert.Equal("Int32", message.Topic);
+                var message = messages.Take();
+
+                Assert.True(message.HandledBy.IsAssignableTo<IReceive<int>>());
+                Assert.Equal(typeof(int), message.MessageType);
                 Assert.Equal("3", message.Message);
             }
         }
@@ -252,17 +256,15 @@ namespace rabbitmq_demo.tests
         public void ListenerThrowsExceptionWhenReceiverForContractIsNotResolved()
         {
             // Arrange
-            using (var listener = new Listener(Substitute.For<IConnectionFactory>(), "dummy"))
-            {
-                var builder = new ContainerBuilder();
-                builder
-                    .RegisterType<ReceiverWithDependency>();
+            var builder = new ContainerBuilder();
+            builder
+                .RegisterType<ReceiverWithDependency>();
 
+            using (var container = builder.Build())
+            using (var listener = new Listener(SetupDummyConnectionFactory(), "dummy"))
+            {
                 // Act && Assert
-                using (var container = builder.Build())
-                {
-                    Assert.Throws<ComponentNotRegisteredException>(() => listener.SubscribeEvents<int>(container));
-                }
+                Assert.Throws<ComponentNotRegisteredException>(() => listener.SubscribeEvents<int>(container));
             }
         }
 
@@ -270,17 +272,16 @@ namespace rabbitmq_demo.tests
         public void ListenerThrowsExceptionWhenDependencyForReceiverIsNotResolved()
         {
             // Arrange
-            using (var listener = new Listener(Substitute.For<IConnectionFactory>(), "dummy"))
-            {
-                var builder = new ContainerBuilder();
-                builder
-                    .RegisterReceiverFor<ReceiverWithDependency, int>();
+            var builder = new ContainerBuilder();
+            builder
+                .RegisterReceiverFor<ReceiverWithDependency, int>();
 
+
+            using (var container = builder.Build())
+            using (var listener = new Listener(SetupDummyConnectionFactory(), "dummy"))
+            {
                 // Act && Assert
-                using (var container = builder.Build())
-                {
-                    Assert.Throws<DependencyResolutionException>(() => listener.SubscribeEvents<int>(container));
-                }
+                Assert.Throws<DependencyResolutionException>(() => listener.SubscribeEvents<int>(container));
             }
         }
 
@@ -321,9 +322,9 @@ namespace rabbitmq_demo.tests
             builder
                 .RegisterReceiverFor<ReceiverWithDependency, int>();
 
+            using (var container = builder.Build())
             using (var listener = new TestListener())
             using (var sender = listener.Sender())
-            using (var container = builder.Build())
             using (var waiter = new BlockingReceiver<int>())
             {
                 listener.SubscribeEvents<int>(container);
@@ -401,5 +402,19 @@ namespace rabbitmq_demo.tests
                 Assert.Equal("\"hallo\"", message);
             }
         }
+
+        private static IConnectionFactory SetupDummyConnectionFactory()
+        {
+            var factory = Substitute.For<IConnectionFactory>();
+            var connection = Substitute.For<IConnection>();
+            var channel = Substitute.For<IModel>();
+
+            factory.CreateConnection().Returns(connection);
+            connection.CreateModel().Returns(channel);
+            channel.QueueDeclare().Returns(new QueueDeclareOk("temp", 0, 0));
+
+            return factory;
+        }
+
     }
 }

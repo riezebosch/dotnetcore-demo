@@ -18,7 +18,7 @@ namespace rabbitmq_demo
 
         public void PublishEvent<TMessage>(TMessage input)
         {
-            var topic = typeof(TMessage).Name;
+            string topic = TopicFor<TMessage>();
 
             var message = input.ToMessage();
             Send?.Invoke(this, new SendEventArgs { Topic = topic, Message = message });
@@ -31,11 +31,10 @@ namespace rabbitmq_demo
 
         public void PublishCommand<TMessage>(TMessage input)
         {
-            var queue = $"{Namespace}.{typeof(TMessage).Name}";
             var message = input.ToMessage();
 
-            var channel = CommandQueueDeclare(queue);
-            channel.BasicPublish(exchange: "",
+            var queue = CommandQueueDeclare<TMessage>();
+            Channel.BasicPublish(exchange: "",
                                  routingKey: queue,
                                  basicProperties: null,
                                  body: message.ToBody());

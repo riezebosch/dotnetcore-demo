@@ -22,50 +22,38 @@ namespace rabbitmq_demo
 
         public void SubscribeEvents<TMessage>(IContainer container)
         {
-            var receiverType = ResolveReceiverType<TMessage>(container);
-
-            var topic = typeof(TMessage).Name;
-            var queueName = Channel.QueueDeclare().QueueName;
-            Channel.QueueBind(queue: queueName,
-                          exchange: Namespace,
-                          routingKey: topic);
-
-            var consumer = new EventingBasicConsumer(Channel);
-            consumer.Received += (o, e) =>
-            {
-                var json = e.Body.ToContent();
-                Received?.Invoke(this, new ReceivedEventArgs
-                {
-                    Topic = topic,
-                    HandledBy = receiverType,
-                    Message = json
-                });
-
-                Handle(container, json.ToObject<TMessage>());
-            };
-
-            Channel.BasicConsume(queue: queueName,
-                 noAck: false,
-                 consumer: consumer);
+            var queue = EventQueueDeclare<TMessage>();
+            ConfigureConsumer<TMessage>(container, queue);
         }
 
-
+       
         public void SubscribeCommands<TMessage>(IContainer container)
+        {
+            var queue = CommandQueueDeclare<TMessage>();
+            ConfigureConsumer<TMessage>(container, queue);
+        }
+
+        private string EventQueueDeclare<TMessage>()
+        {
+            var queue = Channel.QueueDeclare().QueueName;
+            Channel.QueueBind(queue: queue,
+                          exchange: Namespace,
+                          routingKey: TopicFor<TMessage>());
+
+            return queue;
+        }
+
+        private void ConfigureConsumer<TMessage>(IContainer container, string queue)
         {
             var receiverType = ResolveReceiverType<TMessage>(container);
 
-            var topic = typeof(TMessage).Name;
-            var routingKey = $"{Namespace}.{topic}";
-
-            var channel = CommandQueueDeclare(routingKey);
-
-            var consumer = new EventingBasicConsumer(channel);
+            var consumer = new EventingBasicConsumer(Channel);
             consumer.Received += (o, ea) =>
             {
                 var json = ea.Body.ToContent();
                 Received?.Invoke(this, new ReceivedEventArgs
                 {
-                    Topic = topic,
+                    MessageType = typeof(TMessage),
                     HandledBy = receiverType,
                     Message = json
                 });
@@ -74,7 +62,7 @@ namespace rabbitmq_demo
                 Channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
             };
 
-            channel.BasicConsume(queue: routingKey,
+            Channel.BasicConsume(queue: queue,
                  noAck: false,
                  consumer: consumer);
         }

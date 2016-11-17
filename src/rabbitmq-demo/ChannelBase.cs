@@ -28,16 +28,21 @@ namespace rabbitmq_demo
                 type: ExchangeType.Topic);
        }
 
-        protected IModel CommandQueueDeclare(string queue)
+        protected string CommandQueueDeclare<TMessage>()
         {
+            var queue = $"{Namespace}.{TopicFor<TMessage>()}";
             Channel.QueueDeclare(queue: queue,
                 exclusive: false,
                 autoDelete: false,
                 arguments: Arguments);
 
-            return Channel;
+            return queue;
         }
 
+        protected static string TopicFor<TMessage>()
+        {
+            return typeof(TMessage).Name;
+        }
 
         public virtual void Dispose()
         {
