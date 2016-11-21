@@ -13,6 +13,8 @@ namespace rabbitmq_demo
 {
     public class Listener : ChannelBase
     {
+        public event EventHandler<ExecuteExceptionEventArgs> Exceptions;
+
         public event EventHandler<ReceivedEventArgs> Received;
 
         public Listener(IConnectionFactory factory, string ns)
@@ -26,7 +28,7 @@ namespace rabbitmq_demo
             ConfigureConsumer<TMessage>(container, queue);
         }
 
-       
+
         public void SubscribeCommands<TMessage>(IContainer container)
         {
             var queue = CommandQueueDeclare<TMessage>();
@@ -58,8 +60,19 @@ namespace rabbitmq_demo
                     Message = json
                 });
 
-                Handle(container, json.ToObject<TMessage>());
-                Channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
+                try
+                {
+                    Handle(container, json.ToObject<TMessage>());
+                    Channel.BasicAck(deliveryTag: ea.DeliveryTag, multiple: false);
+                }
+                catch (Exception ex)
+                {
+                    Exceptions?.Invoke(this, new ExecuteExceptionEventArgs
+                    {
+                        Receiver = receiverType,
+                        Exception = ex
+                    });
+                }
             };
 
             Channel.BasicConsume(queue: queue,

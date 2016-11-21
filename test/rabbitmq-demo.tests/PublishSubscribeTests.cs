@@ -403,6 +403,36 @@ namespace rabbitmq_demo.tests
             }
         }
 
+        [Fact]
+        public void ExceptionsInExecuteArePropagated()
+        {
+            var service = Substitute.For<IReceive<string>>();
+            service
+                .When(_ => _.Execute(Arg.Any<string>()))
+                .Throw<NotImplementedException>();
+
+            var builder = new ContainerBuilder();
+            builder.RegisterInstance(service);
+
+            using (var container = builder.Build())
+            using(var messages = new BlockingCollection<ExecuteExceptionEventArgs>())
+            using (var listener = new TestListener())
+            using (var sender = listener.Sender())
+            {
+                listener.Exceptions += (o, e) => messages.Add(e);
+
+                listener.SubscribeEvents<string>(container);
+                sender.PublishEvent("some input");
+
+                using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(5)))
+                {
+                    var ex = messages.Take(cts.Token);
+                    Assert.IsType<NotImplementedException>(ex.Exception);
+                    Assert.True(ex.Receiver.IsAssignableTo<IReceive<string>>());
+                }
+            }
+        }
+
         private static IConnectionFactory SetupDummyConnectionFactory()
         {
             var factory = Substitute.For<IConnectionFactory>();
