@@ -150,3 +150,5 @@ using (var listener = new Listener(...))
 
 You have to specify the message type when subscribing to events and commands. 
 The scope of the container has to be wider than the scope of the listener because otherwise the container may already be disposed while the listener is still active.
+
+See the autofac docs about the [registration concepts](http://docs.autofac.org/en/latest/register/registration.html).
