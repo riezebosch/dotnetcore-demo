@@ -6,11 +6,12 @@ Lightweight event bus with RabbitMQ as transportation mechanism.
 
 
 ```
-+------------+               +------------+      +------------+
-|            |               |            |		 |            |
-|   sender   |               | receiver<T>|		 | receiver<T>|
-|            |               |            |		 |            |
-+------------+               +------------+		 +------------+
+                              +------------+      +------------+
++------------+               +------------+|     +------------+|
+|            |               |            ||	 |            ||
+|   sender   |               | receiver<T>||	 | receiver<T>||
+|            |               |            |+	 |            |+
++------------+               +------------+ 	 +------------+
       ||                           ||			       ||
 PublishEvent<T>             SubscribeEvents<T>	SubscribeEvents<T>
       ||                           ||			       ||
