@@ -32,5 +32,18 @@ namespace catalogus_events.tests
                 Assert.True(context.Product.Any());
             }
         }
+
+        [Fact]
+        public void ProductenMetCategorieen()
+        {
+            using (var context = new ProductContext())
+            {
+                var koppel = context.ProductCategorie.First();
+                var product = context.Product.Find(koppel.ProdcatProdId);
+                var categorie = context.Categorie.Find(koppel.ProdcatCatId);
+
+                Assert.True(product.Categorieen.Any());
+            }
+        }
     }
 }

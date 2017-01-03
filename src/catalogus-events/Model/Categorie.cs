@@ -7,5 +7,6 @@ namespace catalogus_events.Model
     {
         public int CatId { get; set; }
         public string CatNaam { get; set; }
+        public IList<ProductCategorie> Producten { get; set; }
     }
 }

@@ -108,6 +108,16 @@ namespace catalogus_events.Model
                 entity.Property(e => e.ProdcatProdId).HasColumnName("prodcat_prod_id");
 
                 entity.Property(e => e.ProdcatCatId).HasColumnName("prodcat_cat_id");
+
+                entity
+                    .HasOne(e => e.Product)
+                    .WithMany(e => e.Categorieen)
+                    .HasForeignKey(e => e.ProdcatProdId);
+
+                entity
+                    .HasOne(e => e.Categorie)
+                    .WithMany(e => e.Producten)
+                    .HasForeignKey(e => e.ProdcatCatId);
             });
         }
     }

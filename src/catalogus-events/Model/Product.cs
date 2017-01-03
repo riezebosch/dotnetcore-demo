@@ -16,5 +16,7 @@ namespace catalogus_events.Model
         public string ProdLeveranciersproductid { get; set; }
 
         public virtual Leverancier ProdLev { get; set; }
+
+        public IList<ProductCategorie> Categorieen { get; set; }
     }
 }
