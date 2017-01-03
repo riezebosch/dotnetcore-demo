@@ -45,5 +45,7 @@ namespace catalogus_events.tests
                 Assert.True(product.Categorieen.Any());
             }
         }
+
+
     }
 }

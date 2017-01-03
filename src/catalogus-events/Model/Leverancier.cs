@@ -10,8 +10,8 @@ namespace catalogus_events.Model
             Product = new HashSet<Product>();
         }
 
-        public int LevId { get; set; }
-        public string LevNaam { get; set; }
+        public int Id { get; set; }
+        public string Naam { get; set; }
 
         public virtual ICollection<Product> Product { get; set; }
     }

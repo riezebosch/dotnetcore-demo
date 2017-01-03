@@ -21,14 +21,14 @@ namespace catalogus_events.Model
         {
             modelBuilder.Entity<Categorie>(entity =>
             {
-                entity.HasKey(e => e.CatId)
+                entity.HasKey(e => e.Id)
                     .HasName("PK_categorie");
 
                 entity.ToTable("categorie");
 
-                entity.Property(e => e.CatId).HasColumnName("cat_id");
+                entity.Property(e => e.Id).HasColumnName("cat_id");
 
-                entity.Property(e => e.CatNaam)
+                entity.Property(e => e.Naam)
                     .IsRequired()
                     .HasColumnName("cat_naam")
                     .HasMaxLength(150);
@@ -36,14 +36,14 @@ namespace catalogus_events.Model
 
             modelBuilder.Entity<Leverancier>(entity =>
             {
-                entity.HasKey(e => e.LevId)
+                entity.HasKey(e => e.Id)
                     .HasName("PK_leverancier");
 
                 entity.ToTable("leverancier");
 
-                entity.Property(e => e.LevId).HasColumnName("lev_id");
+                entity.Property(e => e.Id).HasColumnName("lev_id");
 
-                entity.Property(e => e.LevNaam)
+                entity.Property(e => e.Naam)
                     .IsRequired()
                     .HasColumnName("lev_naam")
                     .HasMaxLength(200);
@@ -51,49 +51,49 @@ namespace catalogus_events.Model
 
             modelBuilder.Entity<Product>(entity =>
             {
-                entity.HasKey(e => e.ProdId)
+                entity.HasKey(e => e.Id)
                     .HasName("PK_product");
 
                 entity.ToTable("product");
 
-                entity.Property(e => e.ProdId).HasColumnName("prod_id");
+                entity.Property(e => e.Id).HasColumnName("prod_id");
 
-                entity.Property(e => e.ProdAfbeeldingurl)
+                entity.Property(e => e.AfbeeldingUrl)
                     .IsRequired()
                     .HasColumnName("prod_afbeeldingurl")
                     .HasMaxLength(500);
 
-                entity.Property(e => e.ProdBeschrijving)
+                entity.Property(e => e.Beschrijving)
                     .IsRequired()
                     .HasColumnName("prod_beschrijving");
 
-                entity.Property(e => e.ProdLevId).HasColumnName("prod_lev_id");
+                entity.Property(e => e.LeverancierId).HasColumnName("prod_lev_id");
 
-                entity.Property(e => e.ProdLeveranciersproductid)
+                entity.Property(e => e.LeveranciersProductCode)
                     .IsRequired()
                     .HasColumnName("prod_leveranciersproductid")
                     .HasMaxLength(150);
 
-                entity.Property(e => e.ProdLeverbaartot)
+                entity.Property(e => e.LeverbaarTot)
                     .HasColumnName("prod_leverbaartot")
                     .HasColumnType("datetime");
 
-                entity.Property(e => e.ProdLeverbaarvanaf)
+                entity.Property(e => e.LeverbaarVanaf)
                     .HasColumnName("prod_leverbaarvanaf")
                     .HasColumnType("datetime");
 
-                entity.Property(e => e.ProdNaam)
+                entity.Property(e => e.Naam)
                     .IsRequired()
                     .HasColumnName("prod_naam")
                     .HasMaxLength(250);
 
-                entity.Property(e => e.ProdPrijs)
+                entity.Property(e => e.Prijs)
                     .HasColumnName("prod_prijs")
                     .HasColumnType("money");
 
-                entity.HasOne(d => d.ProdLev)
+                entity.HasOne(d => d.Leverancier)
                     .WithMany(p => p.Product)
-                    .HasForeignKey(d => d.ProdLevId)
+                    .HasForeignKey(d => d.LeverancierId)
                     .OnDelete(DeleteBehavior.Restrict)
                     .HasConstraintName("FK_product_leverancier");
             });

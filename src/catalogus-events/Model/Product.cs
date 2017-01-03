@@ -5,17 +5,17 @@ namespace catalogus_events.Model
 {
     public partial class Product
     {
-        public int ProdId { get; set; }
-        public int ProdLevId { get; set; }
-        public string ProdNaam { get; set; }
-        public string ProdBeschrijving { get; set; }
-        public string ProdAfbeeldingurl { get; set; }
-        public decimal ProdPrijs { get; set; }
-        public DateTime ProdLeverbaarvanaf { get; set; }
-        public DateTime? ProdLeverbaartot { get; set; }
-        public string ProdLeveranciersproductid { get; set; }
+        public int Id { get; set; }
+        public string Naam { get; set; }
+        public string Beschrijving { get; set; }
+        public string AfbeeldingUrl { get; set; }
+        public decimal Prijs { get; set; }
+        public DateTime LeverbaarVanaf { get; set; }
+        public DateTime? LeverbaarTot { get; set; }
+        public string LeveranciersProductCode { get; set; }
 
-        public virtual Leverancier ProdLev { get; set; }
+        public int LeverancierId { get; set; }
+        public virtual Leverancier Leverancier { get; set; }
 
         public IList<ProductCategorie> Categorieen { get; set; }
     }
