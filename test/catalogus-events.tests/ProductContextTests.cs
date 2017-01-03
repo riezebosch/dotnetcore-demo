@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
+using Microsoft.EntityFrameworkCore;
 
 namespace catalogus_events.tests
 {
@@ -19,7 +20,7 @@ namespace catalogus_events.tests
         }
 
         [Fact]
-        public void ProductenMetCategorieen()
+        public void ProductenGekoppeldAanCategorieen()
         {
             using (var context = new ProductContext())
             {
@@ -27,7 +28,23 @@ namespace catalogus_events.tests
                 var product = context.Product.Find(koppel.ProdcatProdId);
                 var categorie = context.Categorie.Find(koppel.ProdcatCatId);
 
-                Assert.True(product.Categorieen.Any());
+                Assert.Contains(categorie, product.Categorieen.Select(pc => pc.Categorie));
+            }
+        }
+
+        [Fact]
+        public void LoadProductenMetCategorieenEnLeverancier()
+        {
+            using (var context = new ProductContext())
+            {
+                var products = context
+                    .Product
+                    .Include(p => p.Categorieen)
+                    .ThenInclude(pc => pc.Categorie)
+                    .Include(p => p.Leverancier);
+
+                Assert.DoesNotContain(products, p => !p.Categorieen.Any());
+                Assert.DoesNotContain(products, p => p.Leverancier == null);
             }
         }
     }
