@@ -11,7 +11,9 @@
     "Microsoft.NETCore.App": {
       "type": "platform",
       "version": "1.1.0"
-    }
+    },
+    "rabbitmq-demo": "1.2.*",
+    "AutoMapper": "*"
   },
 
   "tools": {
