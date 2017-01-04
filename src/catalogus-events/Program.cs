@@ -36,17 +36,27 @@ namespace catalogus_events
                 .UseSqlServer(connection)
                 .Options;
 
-            using (var context = new ProductContext(options))
-            using (var sender = new Sender(new ConnectionFactory { HostName = host, UserName = user, Password = password }, ns))
+            try
             {
-                sender.Send += (o, e) => Console.WriteLine(e);
+                using (var context = new ProductContext(options))
+                using (var sender = new Sender(new ConnectionFactory { HostName = host, UserName = user, Password = password }, ns))
+                {
+                    sender.Send += (o, e) => Console.WriteLine(e);
 
-                var repository = new ProductRepository(context);
-                var products = repository.LoadProductenMetCategorieenEnLeverancier();
-                var mapper = EventMappers.CreateMapper();
-                var publisher = new ProductPublisher(mapper);
+                    var repository = new ProductRepository(context);
+                    var products = repository.LoadProductenMetCategorieenEnLeverancier();
+                    var mapper = EventMappers.CreateMapper();
+                    var publisher = new ProductPublisher(mapper);
 
-                publisher.Publish(sender, products);
+                    publisher.Publish(sender, products);
+                }
+            }
+            catch (Exception ex)
+            {
+                var original = Console.ForegroundColor;
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Error.WriteLine(ex.ToString());
+                Console.ForegroundColor = original;
             }
         }
 
