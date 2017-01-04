@@ -1,4 +1,5 @@
 ﻿using System;
+using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 
@@ -6,16 +7,20 @@ namespace catalogus_events.Model
 {
     public partial class ProductContext : DbContext
     {
+        public ProductContext(DbContextOptions options) : base(options)
+        {
+        }
+
         public virtual DbSet<Categorie> Categorie { get; set; }
         public virtual DbSet<Leverancier> Leverancier { get; set; }
         public virtual DbSet<Product> Product { get; set; }
         public virtual DbSet<ProductCategorie> ProductCategorie { get; set; }
 
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            #warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
-            optionsBuilder.UseSqlServer(@"Data Source=.\SQLEXPRESS;Initial Catalog=Product;Integrated Security=SSPI");
-        }
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    #warning To protect potentially sensitive information in your connection string, you should move it out of source code. See http://go.microsoft.com/fwlink/?LinkId=723263 for guidance on storing connection strings.
+        //    optionsBuilder.UseSqlServer(@"Data Source=.\SQLEXPRESS;Initial Catalog=Product;Integrated Security=SSPI");
+        //}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

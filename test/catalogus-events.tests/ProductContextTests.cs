@@ -10,10 +10,20 @@ namespace catalogus_events.tests
 {
     public class ProductContextTests
     {
+        private static DbContextOptions<ProductContext> Options
+        {
+            get
+            {
+                return new DbContextOptionsBuilder<ProductContext>()
+                    .UseSqlServer(@"Data Source=.\SQLEXPRESS;Initial Catalog=Product;Integrated Security=SSPI")
+                    .Options;
+            }
+        }
+
         [Fact]
         public void ReadArtikelenFromDatabase()
         {
-            using (var context = new ProductContext())
+            using (var context = new ProductContext(Options))
             {
                 Assert.True(context.Product.Any());
             }
@@ -22,7 +32,7 @@ namespace catalogus_events.tests
         [Fact]
         public void ProductenGekoppeldAanCategorieen()
         {
-            using (var context = new ProductContext())
+            using (var context = new ProductContext(Options))
             {
                 var koppel = context.ProductCategorie.First();
                 var product = context.Product.Find(koppel.ProdcatProdId);
@@ -33,19 +43,17 @@ namespace catalogus_events.tests
         }
 
         [Fact]
-        public void LoadProductenMetCategorieenEnLeverancier()
+        public void LoadProductenMetCategorieenEnLeverancierTest()
         {
-            using (var context = new ProductContext())
+            using (var context = new ProductContext(Options))
             {
-                var products = context
-                    .Product
-                    .Include(p => p.Categorieen)
-                    .ThenInclude(pc => pc.Categorie)
-                    .Include(p => p.Leverancier);
+                var repository = new ProductRepository(context);
+                var products = repository.LoadProductenMetCategorieenEnLeverancier();
 
                 Assert.DoesNotContain(products, p => !p.Categorieen.Any());
                 Assert.DoesNotContain(products, p => p.Leverancier == null);
             }
         }
     }
+   
 }
