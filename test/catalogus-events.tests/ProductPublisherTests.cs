@@ -18,7 +18,11 @@ namespace catalogus_events.tests
         {
             var producten = new List<Product>
             {
-                new Product { Naam = "Fiets" },
+                new Product
+                {
+                    Naam = "Fiets",
+                    Leverancier = new Leverancier { Naam = "Gazelle" }
+                }
             };
 
             using (var receiver = new BlockingReceiver<ArtikelAanCatalogusToegevoegd>())

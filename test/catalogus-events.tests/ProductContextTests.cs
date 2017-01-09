@@ -35,8 +35,8 @@ namespace catalogus_events.tests
             using (var context = new ProductContext(Options))
             {
                 var koppel = context.ProductCategorie.First();
-                var product = context.Product.Find(koppel.ProdcatProdId);
-                var categorie = context.Categorie.Find(koppel.ProdcatCatId);
+                var product = context.Product.Find(koppel.ProductId);
+                var categorie = context.Categorie.Find(koppel.CategorieId);
 
                 Assert.Contains(categorie, product.Categorieen.Select(pc => pc.Categorie));
             }

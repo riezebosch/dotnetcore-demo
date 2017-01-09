@@ -2,6 +2,7 @@
 using JetBrains.Annotations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace catalogus_events.Model
 {
@@ -105,25 +106,38 @@ namespace catalogus_events.Model
 
             modelBuilder.Entity<ProductCategorie>(entity =>
             {
-                entity.HasKey(e => new { e.ProdcatProdId, e.ProdcatCatId })
-                    .HasName("PK__product___3E2432AF1273C1CD");
+                entity.HasKey(e => new { e.ProductId, e.CategorieId })
+                    .HasName("PK_product_categorie");
 
                 entity.ToTable("product_categorie");
 
-                entity.Property(e => e.ProdcatProdId).HasColumnName("prodcat_prod_id");
+                entity.Property(e => e.ProductId).HasColumnName("prodcat_prod_id");
 
-                entity.Property(e => e.ProdcatCatId).HasColumnName("prodcat_cat_id");
+                entity.Property(e => e.CategorieId).HasColumnName("prodcat_cat_id");
 
                 entity
                     .HasOne(e => e.Product)
                     .WithMany(e => e.Categorieen)
-                    .HasForeignKey(e => e.ProdcatProdId);
+                    .HasForeignKey(e => e.ProductId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_ProductCategorie_Product");
 
                 entity
                     .HasOne(e => e.Categorie)
                     .WithMany(e => e.Producten)
-                    .HasForeignKey(e => e.ProdcatCatId);
+                    .HasForeignKey(e => e.CategorieId)
+                    .OnDelete(DeleteBehavior.Restrict)
+                    .HasConstraintName("FK_ProductCategorie_Categorie");
             });
+        }
+
+        internal class ProductContextFactory : IDbContextFactory<ProductContext>
+        {
+            public ProductContext Create(DbContextFactoryOptions options)
+            {
+                
+                return new ProductContext(new DbContextOptionsBuilder<ProductContext>().UseSqlServer(@"Server=.\SQLEXPRESS;Database=Product;Trusted_Connection=true").Options);
+            }
         }
     }
 }

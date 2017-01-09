@@ -5,8 +5,8 @@ namespace catalogus_events.Model
 {
     public partial class ProductCategorie
     {
-        public int ProdcatProdId { get; set; }
-        public int ProdcatCatId { get; set; }
+        public int ProductId { get; set; }
+        public int CategorieId { get; set; }
         public Product Product { get; set; }
         public Categorie Categorie { get; set; }
     }
