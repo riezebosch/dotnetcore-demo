@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using Microsoft.EntityFrameworkCore;
+using EFCore.Practices;
 
 namespace catalogus_events.tests
 {
@@ -46,14 +47,16 @@ namespace catalogus_events.tests
         public void LoadProductenMetCategorieenEnLeverancierTest()
         {
             using (var context = new ProductContext(Options))
+            using (var provider = new SelectPlusOneLoggerProvider(context))
             {
                 var repository = new ProductRepository(context);
                 var products = repository.LoadProductenMetCategorieenEnLeverancier();
 
                 Assert.DoesNotContain(products, p => !p.Categorieen.Any());
                 Assert.DoesNotContain(products, p => p.Leverancier == null);
+
+                provider.Verify();
             }
         }
     }
-   
 }

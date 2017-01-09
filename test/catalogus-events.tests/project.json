@@ -11,7 +11,8 @@
     "Microsoft.EntityFrameworkCore.Design": "1.1.0",
     "Microsoft.EntityFrameworkCore.SqlServer": "1.1.0",
     "Microsoft.EntityFrameworkCore.SqlServer.Design": "1.1.0",
-    "Microsoft.EntityFrameworkCore": "1.1.0"
+    "Microsoft.EntityFrameworkCore": "1.1.0",
+    "EFCore.Practices": "0.0.1"
   },
 
   "frameworks": {
