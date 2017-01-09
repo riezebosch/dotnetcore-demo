@@ -41,6 +41,7 @@ namespace catalogus_events
                 using (var context = new ProductContext(options))
                 using (var sender = new Sender(new ConnectionFactory { HostName = host, UserName = user, Password = password }, ns))
                 {
+                    context.Database.Migrate();
                     sender.Send += (o, e) => Console.WriteLine(e);
 
                     var repository = new ProductRepository(context);
@@ -62,7 +63,7 @@ namespace catalogus_events
 
         private static string ReadLineDefaultIfEmpty(string askfor, string otherwise)
         {
-            Console.Write($"{askfor} (empty for default):");
+            Console.Write($"{askfor} (empty for default): ");
             var input = Console.ReadLine();
 
             if (string.IsNullOrEmpty(input))
