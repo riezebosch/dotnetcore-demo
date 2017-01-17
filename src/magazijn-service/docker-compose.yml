@@ -1,0 +1,8 @@
+version: '2'
+
+services:
+  magazijn-service:
+    image: user/magazijn-service${TAG}
+    build:
+      context: .
+      dockerfile: Dockerfile
