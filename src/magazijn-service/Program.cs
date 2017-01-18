@@ -18,30 +18,21 @@ namespace magazijn_service
         {
             Console.Title = "Magazijn";
 
-            var host = Environment.GetEnvironmentVariable("RABBITMQ_HOST");
-            var user = Environment.GetEnvironmentVariable("RABBITMQ_USER");
-            var password = Environment.GetEnvironmentVariable("RABBITMQ_PASSWORD");
-
-            var factory = new ConnectionFactory
-            {
-                HostName = host,
-                UserName = user,
-                Password = password
-            };
+            var factory = new ConnectionFactory()
+                .FromEnvironment();
 
             var builder = new ContainerBuilder();
             builder
                 .RegisterReceiverFor<MagazijnService, ZetArtikelInMagazijn>();
 
-            builder
-                .Register<VoorraadContext>(c => 
-                new VoorraadContext(new DbContextOptionsBuilder<VoorraadContext>()
-                    .UseSqlite("File=./data/voorraad.db")
-                    .Options));
+            builder.Register(c => 
+                    new VoorraadContext(new DbContextOptionsBuilder<VoorraadContext>()
+                        .UseSqlite("File=./data/voorraad.db")
+                        .Options));
 
             builder
-                .Register<ISender>(c => 
-                    new Sender(factory, "kantilever"));
+                .Register<ISender>(c =>
+                    new Sender(factory, "Kantilever"));
 
             using (var container = builder.Build())
             using (var listener = new Listener(factory, "Kantilever"))

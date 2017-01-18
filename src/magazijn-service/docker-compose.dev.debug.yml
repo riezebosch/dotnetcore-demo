@@ -13,6 +13,4 @@ services:
       - ~/clrdbg:/clrdbg:ro
     entrypoint: tail -f /dev/null
     environment:
-      - RABBITMQ_HOST=rabbitmq
-      - RABBITMQ_USER=guest
-      - RABBITMQ_PASSWORD=guest
+      - RABBITMQ_HOSTNAME=rabbitmq

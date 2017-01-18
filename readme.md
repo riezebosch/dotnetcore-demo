@@ -152,3 +152,27 @@ You have to specify the message type when subscribing to events and commands.
 The scope of the container has to be wider than the scope of the listener because otherwise the container may already be disposed while the listener is still active.
 
 See the autofac docs about the [registration concepts](http://docs.autofac.org/en/latest/register/registration.html).
+
+## Configure from Environment
+
+Instead of configuring the RabbitMQ connection factory you can read them from predefined environment variables.
+
+```cs
+var factory = new ConnectionFactory()
+	.FromEnvironment();
+```
+
+```yml
+version: '2'
+
+services:
+  my-service:
+    environment:
+      - RABBITMQ_HOSTNAME=localhost
+	  - RABBITMQ_USERNAME=guest
+	  - RABBITMQ_PASSWORD=guest
+```
+
+```bash
+docker run -e "RABBITMQ_HOSTNAME=localhost" -e "RABBITMQ_USERNAME=guest" -e "RABBITMQ_PASSWORD=guest" my-service
+```
