@@ -12,6 +12,13 @@ namespace catalogus_events.tests
     public class EventMapperTests
     {
         [Fact]
+        public void ValidateMapping()
+        {
+            var mapper = EventMappers.CreateMapper();
+            mapper.ConfigurationProvider.AssertConfigurationIsValid();
+        }
+
+        [Fact]
         public void MapProductToArtikelAanCatalogusToegevoegd()
         {
             var product = new Product
@@ -40,12 +47,40 @@ namespace catalogus_events.tests
             };
 
             var mapper = EventMappers.CreateMapper();
-            mapper.ConfigurationProvider.AssertConfigurationIsValid();
 
             var result = mapper.Map<ArtikelAanCatalogusToegevoegd>(product);
             Assert.Equal(new string[] { "Clothing" }, result.Categorieen);
 
             Assert.Equal("Koga Miyata", result.Leverancier);
+        }
+
+        [Fact]
+        public void IncludeImageInArtikelAanCatalogusToegevoegdEvent()
+        {
+            var product = new Product
+            {
+                AfbeeldingUrl = "awc_jersey_male_small.gif"
+            };
+
+            var mapper = EventMappers.CreateMapper();
+            var message = mapper.Map<ArtikelAanCatalogusToegevoegd>(product);
+
+            Assert.NotNull(message.Afbeelding);
+            Assert.NotEmpty(message.Afbeelding);
+        }
+
+        [Fact]
+        public void EmptyAfbeeldingWhenFileNotExists()
+        {
+            var product = new Product
+            {
+                AfbeeldingUrl = "something_that_is_definitely_not_there.gif"
+            };
+
+            var mapper = EventMappers.CreateMapper();
+            var message = mapper.Map<ArtikelAanCatalogusToegevoegd>(product);
+
+            Assert.Null(message.Afbeelding);
         }
     }
 }

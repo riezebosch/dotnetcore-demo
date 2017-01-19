@@ -15,5 +15,6 @@ namespace catalogus_events.Events
         public string LeverancierCode { get; set; }
         public string Leverancier { get; set; }
         public IList<string> Categorieen { get; set; }
+        public byte[] Afbeelding { get; set; }
     }
 }
