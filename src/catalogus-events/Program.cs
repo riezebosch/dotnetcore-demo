@@ -14,23 +14,8 @@ namespace catalogus_events
     {
         public static void Main(string[] args)
         {
-            string connection = ReadLineDefaultIfEmpty(askfor: "Connection string to Products database",
-                otherwise: @"Data Source=.\SQLEXPRESS;Initial Catalog=Product;Integrated Security=SSPI");
-
-            var host = ReadLineDefaultIfEmpty(
-                askfor: "RabbitMQ host", 
-                otherwise: "localhost");
-
-            Console.Write("Namespace: ");
-            var ns = Console.ReadLine();
-
-            var user = ReadLineDefaultIfEmpty(
-                askfor: "User", 
-                otherwise: "guest");
-
-            var password = ReadLineDefaultIfEmpty(
-                askfor: "Password", 
-                otherwise: "guest");
+            string connection = 
+                Environment.GetEnvironmentVariable("CONNECTIONSTRING");
 
             var options = new DbContextOptionsBuilder<ProductContext>()
                 .UseSqlServer(connection)
@@ -39,15 +24,24 @@ namespace catalogus_events
             try
             {
                 using (var context = new ProductContext(options))
-                using (var sender = new Sender(new ConnectionFactory { HostName = host, UserName = user, Password = password }, ns))
+                using (var sender = new Sender(
+                    new ConnectionFactory()
+                    .FromEnvironment(), "Kantilever"))
                 {
                     context.Database.Migrate();
                     sender.Send += (o, e) => Console.WriteLine(e);
 
-                    var repository = new ProductRepository(context);
-                    var products = repository.LoadProductenMetCategorieenEnLeverancier();
-                    var mapper = EventMappers.CreateMapper();
-                    var publisher = new ProductPublisher(mapper);
+                    var repository = 
+                        new ProductRepository(context);
+
+                    var products = 
+                        repository.LoadProductenMetCategorieenEnLeverancier();
+
+                    var mapper = 
+                        EventMappers.CreateMapper();
+
+                    var publisher = 
+                        new ProductPublisher(mapper);
 
                     publisher.Publish(sender, products);
                 }
@@ -59,21 +53,6 @@ namespace catalogus_events
                 Console.Error.WriteLine(ex.ToString());
                 Console.ForegroundColor = original;
             }
-        }
-
-        private static string ReadLineDefaultIfEmpty(string askfor, string otherwise)
-        {
-            Console.Write($"{askfor} (empty for default): ");
-            var input = Console.ReadLine();
-
-            if (string.IsNullOrEmpty(input))
-            {
-                input = otherwise;
-                Console.WriteLine($"Using default: {input}");
-            }
-
-            Console.WriteLine();
-            return input;
         }
     }
 }

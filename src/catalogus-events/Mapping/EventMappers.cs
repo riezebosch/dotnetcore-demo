@@ -28,7 +28,7 @@ namespace catalogus_events.Mapping
 
         private static byte[] ReadImage(string url)
         {
-            var path = $@"Plaatjes\{url}";
+            var path = Path.Combine("Plaatjes", url);
             if (File.Exists(path))
             {
                 return File.ReadAllBytes(path);

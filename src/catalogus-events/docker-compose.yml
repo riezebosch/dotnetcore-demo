@@ -1,0 +1,8 @@
+version: '2'
+
+services:
+  catalogus-events:
+    image: user/catalogus-events${TAG}
+    build:
+      context: .
+      dockerfile: Dockerfile
