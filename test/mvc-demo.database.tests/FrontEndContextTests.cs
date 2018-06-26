@@ -83,14 +83,6 @@ namespace mvc_demo.database.tests
 
     public class FrontEndContextFactory : IDbContextFactory<FrontEndContext>
     {
-        /// <summary>
-        /// Could not invoke this command on the startup project 'mvc-demo.database.tests'.
-        /// Entity Framework Core does not support commands on class library projects in ASP.NET Core and .NET Core applications.
-        /// </summary>
-        static void Main()
-        {
-        }
-
         public FrontEndContext Create(DbContextFactoryOptions options)
         {
             return new FrontEndContext(new DbContextOptionsBuilder<FrontEndContext>().UseSqlServer(@"Server=.\SQLEXPRESS;Database=mvc-demo.database.tests;Trusted_Connection=true").Options);
